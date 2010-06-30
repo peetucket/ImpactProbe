@@ -30,9 +30,6 @@ class Controller_Params extends Controller {
             $post->rule('project_title', 'not_empty')
                  ->rule('project_title', 'max_length', array(120));
                  //->callback('keywords_phrases', array($this, 'keywords_not_empty')); (NOT WORKING!!)
-            // TEMP hack fix...
-            if(!array_key_exists('keywords_phrases', $this->field_data))
-                $array->error($field, 'keywords_not_empty', array($array[$field]));
             
             $this->field_data = $post->as_array(); // For form re-population
             

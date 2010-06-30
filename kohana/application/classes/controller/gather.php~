@@ -1,12 +1,93 @@
 <?php defined('SYSPATH') or die('No direct script access.');
 
 class Controller_Gather extends Controller {
-
+    
+    public function before() {
+        parent::before();
+        
+        //$this->model_params = new Model_Params;
+        
+        // Config settings (get these from config file...?)
+        $this->connection_retries = 5;
+    }
+    
     public function action_index()
     {
         print "Testing\n";
     }
-
+    
+    public function action_twitter()
+    {
+        
+        $lang = "lang=en";
+        $num
+        
+        // Generate query string
+        $query_str = $lang."&q=".urlencode("twitter me");
+        
+        echo $query_str;
+        
+        exit;
+        
+        //request URL
+        $request = "http://search.twitter.com/search.atom?$query_str";
+        
+        $curl= curl_init();
+        curl_setopt ($curl, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt ($curl, CURLOPT_URL,$request);
+        $response = curl_exec ($curl);
+        curl_close($curl);
+        
+        //remove "twitter:" from the $response string
+        $response = str_replace("twitter:", "", $response);
+        
+        //convert response XML into an object
+        $xml = simplexml_load_string($response);
+        
+        //loop through each entry(s) in the feed
+        for($i=0;$i<count($xml->entry);$i++) {
+            
+            $id = $xml->entry[$i]->id;
+            
+            $id_parts = explode(":",$id); //explode the $id by ":"
+            $tweet_id = array_pop($id_parts);
+            
+            $account_link = $xml->entry[$i]->author->uri;
+            $image_link = $xml->entry[$i]->link[1]->attributes()->href;
+            
+            $name = trim($xml->entry[$i]->author->name, ")"); //get name from entry and trim the last ")"
+            $name_parts = explode("(", $name); //explode $name by the rest "(" inside it
+            $real_name = trim(array_pop($name_parts));
+            $screen_name = trim(array_pop($name_parts));
+    
+            //get the published time, replace T and Z with " " and trim the last " "
+            $published_time = trim(str_replace(array("T","Z")," ",$xml->entry[$i]->published));
+    
+            $status_link = $xml->entry[$i]->link[0]->attributes()->href;
+            $tweet_text = $xml->entry[$i]->content;
+    
+            //remove <b> and </b> from the tweet. If you want to show bold keyword then you can comment this line
+            // Use this to highlight keywords found...
+            //$tweet = str_replace(array("<b>", "</b>"), "", $tweet);
+    
+            //get the source link
+            $source = $xml->entry[$i]->source;
+    
+            //the result div that holds the information
+            echo '<div class="result" id="'. $tweet_id .'">
+                            <div class="profile_image"><a href="'. $account_link .'"><img src="'. $image_link .'"></a></div>
+                            <div class="status">
+                                    <div class="content">
+                                            <strong><a href="'. $account_link .'">'.$screen_name.'</a></strong> '. $tweet_text .'
+                                    </div>
+                                    <div class="time">
+                                            '. $real_name .' at <a href="'. $status_link .'">'. $published_time .'</a> via '. $source .'
+                                    </div>
+                            </div>
+                    </div>';
+        }
+    }
+    
     public function action_test()
     {
         //EX COMMAND: php /path/to/kohana/index.php --uri=gather/test --user=test1 --pass=test2
@@ -14,6 +95,6 @@ class Controller_Gather extends Controller {
         // Get the values of `user` and `pass`
         $params = CLI::options('user', 'pass'); // $params['user'] and $params['pass']
         
-        mkdir("/home/adrian/Documents/GSoC_2010/src".$params['user']);
+        mkdir("/home/adrian/Documents/GSoC_2010/src/".$params['user']);
     }
 }

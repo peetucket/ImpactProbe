@@ -11,7 +11,7 @@ class Model_Params extends Model {
     public function insert_keywords($project_id, Array $keywords_phrases)
     {
         foreach ($keywords_phrases as $keyword_phrase) {
-            DB::insert('keywords_phrases', array('project_id', 'keyword_phrase', 'date_added'))->values(array($project_id, $keyword_phrase, time()))->execute();
+            DB::insert('keywords_phrases', array('project_id', 'keyword_phrase', 'date_added'))->values(array($project_id, trim($keyword_phrase), time()))->execute();
         }
     }
     
