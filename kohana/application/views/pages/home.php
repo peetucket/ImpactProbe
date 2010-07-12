@@ -10,7 +10,7 @@
         <tr>
             <td align="left"><?= $project['project_title'] ?></td>
             <td align="center"><?= date("m/d/y", $project['date_created']) ?></td>
-            <td align="center"><?= '[view results] [<a href="'.Url::base(TRUE).'params/modify/'.$project['project_id'].'">params</a>]<br>' ?></td>
+            <td align="center"><?= '[<a href="'.Url::base(TRUE).'results/view/'.$project['project_id'].'">view results</a>] [<a href="'.Url::base(TRUE).'params/modify/'.$project['project_id'].'">params</a>]<br>' ?></td>
         </tr>
     <? } ?>
 </table>

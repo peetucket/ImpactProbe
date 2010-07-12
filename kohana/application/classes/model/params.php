@@ -4,7 +4,7 @@ class Model_Params extends Model {
     
     public function insert_project($data)
     {
-        list($insert_id, $num_affected_rows) = DB::insert('projects', array('project_title', 'date_created'))->values($data, time())->execute();
+        list($insert_id, $num_affected_rows) = DB::insert('projects', array_keys($data))->values(array_values($data))->execute();
         return $insert_id;
     }
     
@@ -24,9 +24,10 @@ class Model_Params extends Model {
     
     public function get_active_keywords($project_id)
     {
-        return DB::query(Database::SELECT, "SELECT * FROM `keywords_phrases` WHERE (`project_id` = $project_id AND `active` = 1)")->execute()->as_array();
-        
-        //DB::select()->from('projects')->and_where(array('project_id', 'active'), '=', array($project_id, 1));
+        return DB::select()->from('keywords_phrases')
+                           ->where('project_id','=',$project_id)
+                           ->where('active','=',1)
+                           ->execute()->as_array();
     }
     
     public function get_project_data($project_id)

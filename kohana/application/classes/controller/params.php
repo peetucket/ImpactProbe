@@ -21,7 +21,6 @@ class Controller_Params extends Controller {
         $view->page_content->mode = "New";
         
         $this->errors = "";
-        $this->field_data = "";
         if($_POST) {
             
             // Form validation
@@ -35,19 +34,31 @@ class Controller_Params extends Controller {
             
             if ($post->check()) {
                 
+                // CHANGE THIS...+model
                 $project_data = array(
-                    $this->field_data['project_title']
+                    'project_title' => $this->field_data['project_title'],
+                    'date_created' => time(),
+                    'gather_interval' => 'daily'
                 );
                 $project_id = $this->model_params->insert_project($project_data);
                 
                 $this->model_params->insert_keywords($project_id, $this->field_data['keywords_phrases']);
+                
+                // if($start_gathering_now)
+                //     $perform_gather = Request::factory('gather/index/'.$project_id)->execute();
+                //     $perform_gather->response; // pass this to view (output)
                 
                 $this->request->redirect(''); // Redirect to "Home" page
                 
             } else { 
                 $this->errors = $post->errors('params');
             }
-        }
+        } else {
+            // Populate form w/ empty values
+            $this->field_data = array(
+                'project_title' => ''
+            );
+        } 
             
         $view->page_content->errors = $this->errors;
         $view->page_content->field_data = $this->field_data;
@@ -70,7 +81,7 @@ class Controller_Params extends Controller {
             $view->page_content->mode = "Modify";
             
             $this->errors = "";
-            $this->field_data = $project_data[0];
+            $this->field_data = array_pop($project_data);
             
             // Get keywords from database
             $this->active_keywords = $this->model_params->get_active_keywords($project_id);
@@ -78,7 +89,7 @@ class Controller_Params extends Controller {
             
             
             /*
-            // NOTE: Allow user to add or deactivate keywords (do not allow keyword removal)
+            // NOTE: Allow user to add or deactivate keywords (but DO NOT allow keyword removal)
             
             
             $active_keyword_phrases = array(); // Keywords that have already been added (will be made active or deactive)
