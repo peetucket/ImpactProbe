@@ -12,11 +12,15 @@ html, body {
     font-weight:bold;
     color:#FF0000;
 }
+.success {
+    font-weight:bold;
+    color:#00CC00;
+}
 
-#title { width:220px; }
+#project_title { width:276px; }
 #add_keyword { width:150px; }
 
-#keywords_phrases {
-    width:220px;
+#keywords_phrases, #deactivated_keywords_phrases {
+    width:276px;
     height:150px;
 }

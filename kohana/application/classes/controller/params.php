@@ -22,7 +22,6 @@ class Controller_Params extends Controller {
         
         $this->errors = "";
         if($_POST) {
-            
             // Form validation
             $post = new Validate($_POST); // array_merge($_POST, $_FILES)
             $post->filter(TRUE, 'trim');  // (NOT WORKING!!!) Apply trim() to all input values 
@@ -34,19 +33,23 @@ class Controller_Params extends Controller {
             
             if ($post->check()) {
                 
-                // CHANGE THIS...+model
-                $project_data = array(
+                $this->field_data['active'] = (array_key_exists('active', $this->field_data)) ? 1 : 0;
+                
+                $project_id = $this->model_params->insert_project(array(
                     'project_title' => $this->field_data['project_title'],
                     'date_created' => time(),
-                    'gather_interval' => 'daily'
-                );
-                $project_id = $this->model_params->insert_project($project_data);
+                    'gather_interval' => 'daily',
+                    'active' => $this->field_data['active']
+                ));
                 
                 $this->model_params->insert_keywords($project_id, $this->field_data['keywords_phrases']);
                 
-                // if($start_gathering_now)
-                //     $perform_gather = Request::factory('gather/index/'.$project_id)->execute();
-                //     $perform_gather->response; // pass this to view (output)
+                // Create directory to store cached text
+                mkdir(Kohana::config('myconf.lemur.docs')."/$project_id");
+                
+                if($this->field_data['active'])
+                     Request::factory('gather/index/'.$project_id)->execute();
+                     // Request::factory(...)->execute()->response; // pass this obj to view (output)
                 
                 $this->request->redirect(''); // Redirect to "Home" page
                 
@@ -56,10 +59,11 @@ class Controller_Params extends Controller {
         } else {
             // Populate form w/ empty values
             $this->field_data = array(
-                'project_title' => ''
+                'project_title' => '',
+                'active' => 1
             );
         } 
-            
+        
         $view->page_content->errors = $this->errors;
         $view->page_content->field_data = $this->field_data;
         $this->request->response = $view;
@@ -80,33 +84,60 @@ class Controller_Params extends Controller {
             $view->page_content = View::factory('pages/param_form');
             $view->page_content->mode = "Modify";
             
+            $this->project_data = array_pop($project_data);
+            
             $this->errors = "";
-            $this->field_data = array_pop($project_data);
-            
-            // Get keywords from database
-            $this->active_keywords = $this->model_params->get_active_keywords($project_id);
-            $this->field_data['keywords_phrases'] = $this->active_keywords;
-            
-            
-            /*
-            // NOTE: Allow user to add or deactivate keywords (but DO NOT allow keyword removal)
-            
-            
-            $active_keyword_phrases = array(); // Keywords that have already been added (will be made active or deactive)
-            $new_keyword_phrases = array(); // New keywords
-            foreach ($keywords_phrases as $keyword_phrase) {
-                if(is_int($keyword_phrase)) {
-                    array_push($active_keyword_phrases, $keyword_phrase);
-                } else {
-                    array_push($new_keyword_phrases, $keyword_phrase);
-                } 
+            if($_POST) {
+                // Form validation
+                $post = new Validate($_POST); // array_merge($_POST, $_FILES)
+                $post->filter(TRUE, 'trim');  // (NOT WORKING!!!) Apply trim() to all input values 
+                $post->rule('project_title', 'not_empty')
+                     ->rule('project_title', 'max_length', array(120));
+                    //->callback('keywords_phrases', array($this, 'keywords_not_empty')); (NOT WORKING!!)
+                
+                $this->field_data = $post->as_array(); // For form re-population
+                
+                if ($post->check()) {
+                    
+                    $this->model_params->update_project($project_id, array(
+                        'project_title' => $this->field_data['project_title']
+                    ));
+                    
+                    // Add new keywords and activate/deactivate old
+                    $new_keywords_phrases = array();
+                    $updated_keywords_phrases = array(); 
+                    if(array_key_exists('keywords_phrases', $this->field_data)) {
+                        foreach($this->field_data['keywords_phrases'] as $keyword_phrase) {
+                            if($keyword_phrase > 0)
+                                $updated_keywords_phrases[$keyword_phrase] = 1; // Keyword set as active
+                            else
+                                array_push($new_keywords_phrases, $keyword_phrase);
+                        }
+                    }
+                    if(array_key_exists('deactivated_keywords_phrases', $this->field_data)) {
+                        foreach($this->field_data['deactivated_keywords_phrases'] as $keyword_phrase)
+                            $updated_keywords_phrases[$keyword_phrase] = 0; // Keyword set as deactivated
+                    }
+                    
+                    if(count($new_keywords_phrases) > 0)
+                        $this->model_params->insert_keywords($project_id, $new_keywords_phrases); 
+                    $this->model_params->update_keywords($updated_keywords_phrases); 
+                    
+                    $this->request->redirect(''); // Redirect to "Home" page
+                    
+                } else { 
+                    $this->errors = $post->errors('params');
+                }
+            } else {
+                // Populate form w/ values from database
+                $this->field_data = array(
+                    'project_title' => $this->project_data['project_title'],
+                    'keywords_phrases' => $this->model_params->get_active_keywords($project_id),
+                    'deactivated_keywords_phrases' => $this->model_params->get_deactivated_keywords($project_id)
+                );
             }
             
-            
-            $this->request->redirect(Url::base()); // Redirect to "Home" page
-            
-            */
-                
+            $this->field_data['project_id'] = $project_id; 
             $view->page_content->errors = $this->errors;
             $view->page_content->field_data = $this->field_data;
             $this->request->response = $view;

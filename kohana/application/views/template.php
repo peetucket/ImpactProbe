@@ -8,6 +8,15 @@
 <link rel="stylesheet" href="<?= Kohana::config('myconf.url.css'); ?>main.css" type="text/css">
 <script src="<?= Kohana::config('myconf.url.js'); ?>jquery.min.js" type="text/javascript"></script>
 <script src="<?= Kohana::config('myconf.url.js'); ?>jquery.selectboxes.min.js" type="text/javascript"></script>
+
+<script type="text/javascript" language="javascript" src="<?= Kohana::config('myconf.url.js'); ?>lytebox.js"></script>
+<link rel="stylesheet" href="<?= Kohana::config('myconf.url.css'); ?>lytebox.css" type="text/css" media="screen" />
+<style type="text/css">
+#lbClose.grey { background: url(<?= Kohana::config('myconf.url.images'); ?>close_grey.png) no-repeat; }
+#lbLoading {
+    position: absolute; top: 45%; left: 0%; height: 32px; width: 100%; text-align: center; line-height: 0; background: url(<?= Kohana::config('myconf.url.images'); ?>loading.gif) center no-repeat;
+}
+</style>
 </head>
 
 <body>

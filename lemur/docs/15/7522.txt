@@ -1,0 +1,6 @@
+<DOC>
+<DOCNO>7522</DOCNO>
+<TEXT>
+A list of lectures from the Computer Science Club at UW - http://csclub.uwaterloo.ca/media/
+</TEXT>
+</DOC>

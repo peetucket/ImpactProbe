@@ -1,0 +1,6 @@
+<DOC>
+<DOCNO>7736</DOCNO>
+<TEXT>
+@revistagalileu uW (microwatts) não seriam suficientes para abastecer nem ao menos um simples controle remoto!
+</TEXT>
+</DOC>

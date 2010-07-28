@@ -17,10 +17,10 @@ html, body {
     color:#00CC00;
 }
 
-#title { width:220px; }
+#project_title { width:275px; }
 #add_keyword { width:150px; }
 
-#keywords_phrases {
-    width:220px;
+#keywords_phrases, #deactivated_keywords_phrases {
+    width:276px;
     height:150px;
 }

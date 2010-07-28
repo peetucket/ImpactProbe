@@ -1,0 +1,1 @@
+0 0 * * * /usr/bin/php /home/adrian/Documents/GSoC_2010/src/ProjectAware/kohana/index.php --uri=gather/index/daily

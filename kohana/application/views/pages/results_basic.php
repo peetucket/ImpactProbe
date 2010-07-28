@@ -1,4 +1,14 @@
+<script type="text/javascript">
+    $(document).ready(function(){
+        $("#cluster_btn").click(function() {
+            $("#cluster_btn").attr('value', 'Clustering...'); 
+            $("#cluster_btn").attr('disabled', 'disabled'); // Disable submit button
+            window.location.replace("<?= Url::base().'index.php/results/cluster/'.$project_data['project_id'] ?>");
+        });
+    });
+</script>
 <a href="<?= Url::base() ?>">&laquo; Back</a>
+<h3>Results - <?= $project_data['project_title'] ?></h3>
 
 <form name="results_basic" id="results_basic" method="post" action="">
 <? if($errors) { 
@@ -26,10 +36,10 @@
 </select>
 &nbsp;&nbsp;
 <b>Show: </b>
-<!--<select name="display">
+<? /*<select name="display">
    <option value="individual entries" <? if($field_data['display'] == 'individual entries') { echo("selected"); } ?>>individual entries</option>
    <option value="daily summaries" <? if($field_data['display'] == 'daily summaries') { echo("selected"); } ?>>daily summaries</option>
-</select>-->
+</select> */ ?>
 <select name="num_results">
   <option value="25" <? if($field_data['num_results'] == 25) { echo("selected"); } ?>>25</option>
   <option value="50" <? if($field_data['num_results'] == 50) { echo("selected"); } ?>>50</option>
@@ -41,6 +51,12 @@
 &nbsp;&nbsp;
 <input type="submit" name="Submit" value="View">
 </form>
+
+<p><? if($clustered) { ?>
+<input type="button" name="cluster_view_btn" id="cluster_view_btn" value="View Clusters" onClick="parent.location='<?= Url::base() ?>index.php/results/cluster_view/<?= $project_data['project_id'] ?>'">
+<? } else { ?>
+<input type="button" name="cluster_btn" id="cluster_btn" value="Cluster All">
+<? } ?></p>
 
 <p>
 <? if(count($results) > 0) { 
@@ -55,7 +71,7 @@
             <td>&nbsp;</td>
             <td align="center"><span style="color:#FFF;"><b>Date Retrieved</b></span></td>
             <td align="center"><span style="color:#FFF;"><b>Date Published</b></span></td>
-            <td align="center"><span style="color:#FFF;"><b>Keyword Metadata</b></span></td>
+            <td align="left"><span style="color:#FFF;"><b>Keyword Metadata</b></span></td>
             <td align="center">&nbsp;</td>
         </tr>
         <? $i = 1;

@@ -2,8 +2,12 @@
     $(document).ready(function(){
         
         $('#add_keyword_btn').click(function() {
-            var new_keyword = $('#add_keyword_text').val().trim();
+            var new_keyword = $('#add_keyword_text').val().replace(/["]/g,'').trim(); // Remove quotes(") and trim whitespace
             if(new_keyword) {
+                if($('#exact_phrase').is(':checked')) {
+                    new_keyword = '"' + new_keyword + '"';
+                    $('#exact_phrase').attr('checked', false);
+                }
                 $("#keywords_phrases").addOption(new_keyword, new_keyword); // add new keyword to combo box
                 $('#add_keyword_text').val(""); // clear 'add keyword' textfield
             }
@@ -16,20 +20,49 @@
             });
         });
         
+        <? if($mode == "Modify") { ?>
+        $('#deactivate_keyword_btn').click(function() {
+            // move selected keywords from active to deactivated combobox
+            $("#keywords_phrases option:selected").each(function () {
+                var keyword_phrase = $(this).val();
+                $("#keywords_phrases").removeOption(keyword_phrase);
+                if(isInteger(keyword_phrase)) {
+                    // Only move to deactivated if this keyword was added previously
+                    $("#deactivated_keywords_phrases").addOption(keyword_phrase, $(this).text());
+                }
+            });
+        });
+        $('#reactivate_keyword_btn').click(function() {
+            // move selected keywords from deactivated to active combobox
+            $("#deactivated_keywords_phrases option:selected").each(function () {
+                var keyword_phrase = $(this).val();
+                $("#deactivated_keywords_phrases").removeOption(keyword_phrase);
+                $("#keywords_phrases").addOption(keyword_phrase, $(this).text());
+            });
+        });
+        <? } ?>
+        
         $('#params_form').submit(function() {
-            $("#keywords_phrases *").attr("selected","selected"); // select all keywords on form submit
+            $("#keywords_phrases *").attr("selected","selected"); // Select all keywords on form submit
+            $("#submit_btn").attr('value', 'Loading...'); 
+            $("#submit_btn").attr('disabled', 'disabled'); // Disable submit button
+            <? if($mode == "Modify") { ?>
+            $("#deactivated_keywords_phrases *").attr("selected","selected");
+            <? } ?>
             
-            // maybe do some form validation here later...
+            // MAYBE do some form validation here later...
         });
     });
-    
-    //function clearFieldBg(field_id) { ... }
+
+    function isInteger(s) {
+        return (s.toString().search(/^-?[0-9]+$/) == 0);
+    }
 </script>
 
 <a href="<?= Url::base() ?>">&laquo; Back</a>
 <h3><?= $mode ?> Monitoring Project</h3>
 
-<form name="params_form" id="params_form" action="<?= Url::base(TRUE).'params/new' ?>" method="post">
+<form name="params_form" id="params_form" action="<?= Url::base(TRUE) ?>params/<?= ($mode == "New") ? "new" : "modify/".$field_data['project_id'] ?>" method="post">
 
 <? if($errors) { 
     echo '<p class="errors">'; 
@@ -42,10 +75,11 @@
 </p>
 
 <p>
-<? if($mode == "New") { ?>
     <b>Keywords and Phrases</b><br>
     <input type="text" name="add_keyword_text" id="add_keyword_text" value="">
+    <label for="exact_phrase"><input name="exact_phrase" id="exact_phrase" type="checkbox" value="1">exact</label>
     <input type="button" id="add_keyword_btn" name="add_keyword_btn" value="&#043;">
+<? if($mode == "New") { ?>
     <input type="button" id="remove_keyword_btn" name="remove_keyword_btn" value="&#8722;">
     <br>
     <select id="keywords_phrases" name="keywords_phrases[]" multiple="multiple">
@@ -56,17 +90,31 @@
         } ?>
     </select>
 <? } elseif($mode == "Modify") { ?>
-    <b>Keywords and Phrases</b><br>
+    <input type="button" id="deactivate_keyword_btn" name="deactivate_keyword_btn" value="&#8722;">
+    <br>
     <select id="keywords_phrases" name="keywords_phrases[]" multiple="multiple">
         <? foreach($field_data['keywords_phrases'] as $keyword_phrase) {
-            echo '<option value="'.$keyword_phrase['keyword_id'].'">'.$keyword_phrase['keyword_phrase'].'</option>';
+            $quotes = ($keyword_phrase['exact_phrase']) ? '"' : '';
+            echo '<option value="'.$keyword_phrase['keyword_id'].'">'.$quotes.$keyword_phrase['keyword_phrase'].$quotes.'</option>';
         } ?>
     </select>
+    
+    <p>
+    <b>Deactivated Keywords and Phrases</b><br>
+    <input type="button" id="reactivate_keyword_btn" name="reactivate_keyword_btn" value="Reactivate">
+    <br>
+    <select id="deactivated_keywords_phrases" name="deactivated_keywords_phrases[]" multiple="multiple">
+        <? foreach($field_data['deactivated_keywords_phrases'] as $keyword_phrase) {
+            $quotes = ($keyword_phrase['exact_phrase']) ? '"' : '';
+            echo '<option value="'.$keyword_phrase['keyword_id'].'">'.$quotes.$keyword_phrase['keyword_phrase'].$quotes.'</option>';
+        } ?>
+    </select></p>
 <? } ?>
 </p>
 
 <? if($mode == 'New') { ?>
-<input type="submit" id="submit_btn" name="submit_btn" value="<?= ($mode == "New") ? "Submit" : "Modify" ?>">
+<label for="active"><input name="active" id="active" type="checkbox" value="1"<? if($field_data['active']) echo ' checked="true"'; ?>> Immediately activate project</label>
 <? } ?>
 
+<input type="submit" id="submit_btn" name="submit_btn" value="<?= ($mode == "New") ? "Submit" : "Modify" ?>">
 </form>

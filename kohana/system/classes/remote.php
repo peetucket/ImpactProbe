@@ -63,10 +63,15 @@ class Remote extends Kohana_Remote {
 
 		// Close the connection
 		curl_close($remote);
-
-		if (isset($error))
+                
+                // CUSTOM/EDITED:
+                if($code == 403) 
+                {
+                	return "REMOTE_FORBIDDEN: 403";
+                }
+		elseif (isset($error))
 		{
-			return "ERROR: $code";
+			return "REMOTE_ERROR: $code"; 
 			//throw new Kohana_Exception('Error fetching remote :url [ status :code ] :error',
 			//	array(':url' => $url, ':code' => $code, ':error' => $error));
 		}

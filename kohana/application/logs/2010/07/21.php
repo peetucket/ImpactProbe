@@ -1,0 +1,15 @@
+<?php defined('SYSPATH') or die('No direct script access.'); ?>
+
+2010-07-21 09:22:28 --- ERROR: ErrorException [ 2 ]: fopen(/home/adrian/Documents/GSoC_2010/src/ProjectAware/lemur/docs/1/8601.txt): failed to open stream: No such file or directory ~ APPPATH/classes/model/gather.php [ 46 ]
+2010-07-21 16:21:13 --- ERROR: ErrorException [ 8 ]: Undefined variable: keywords_phrases ~ APPPATH/classes/model/results.php [ 13 ]
+2010-07-21 16:32:48 --- ERROR: ErrorException [ 4 ]: syntax error, unexpected T_STRING ~ APPPATH/classes/controller/results.php [ 154 ]
+2010-07-21 16:33:00 --- ERROR: ErrorException [ 8 ]: Undefined variable: return_code ~ APPPATH/classes/controller/results.php [ 156 ]
+2010-07-21 16:38:38 --- ERROR: ErrorException [ 8 ]: Undefined variable: return_code ~ APPPATH/classes/controller/results.php [ 156 ]
+2010-07-21 16:51:42 --- ERROR: ErrorException [ 8 ]: Undefined variable: g ~ APPPATH/classes/controller/results.php [ 154 ]
+2010-07-21 16:51:57 --- ERROR: ErrorException [ 8 ]: Undefined variable: return_code ~ APPPATH/classes/controller/results.php [ 158 ]
+2010-07-21 16:59:23 --- ERROR: ErrorException [ 1 ]: Call to undefined function PsExecute() ~ APPPATH/classes/controller/results.php [ 155 ]
+2010-07-21 16:59:27 --- ERROR: ErrorException [ 1 ]: Call to undefined function PsExec() ~ APPPATH/classes/controller/results.php [ 178 ]
+2010-07-21 17:02:05 --- ERROR: ErrorException [ 8 ]: Undefined variable: retval ~ APPPATH/classes/controller/results.php [ 160 ]
+2010-07-21 17:07:46 --- ERROR: ErrorException [ 2 ]: unlink(clusterindex.cl) [function.unlink]: No such file or directory ~ APPPATH/classes/controller/results.php [ 176 ]
+2010-07-21 17:08:07 --- ERROR: ErrorException [ 2 ]: unlink(clusterindex.cl) [function.unlink]: No such file or directory ~ APPPATH/classes/controller/results.php [ 170 ]
+2010-07-21 17:10:12 --- ERROR: ErrorException [ 2 ]: unlink(clusterindex.cl) [function.unlink]: No such file or directory ~ APPPATH/classes/controller/results.php [ 174 ]

@@ -1,0 +1,6 @@
+<DOC>
+<DOCNO>8179</DOCNO>
+<TEXT>
+CADTEAM introduceert het Fit Vitaal plan voor uw CAD software. Lees er alles over op www.cadteam.nl
+</TEXT>
+</DOC>
