@@ -1,6 +1,0 @@
-<DOC>
-<DOCNO>8553</DOCNO>
-<TEXT>
-Security TIP: RT #computertotaal: Slot op uw computer http://bit.ly/d4fLFR | Leuke #security gimmick!
-</TEXT>
-</DOC>

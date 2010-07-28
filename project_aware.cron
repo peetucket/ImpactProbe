@@ -1,1 +1,0 @@
-0 0 * * * /usr/local/bin/php /data/www/googlecode/kohana/index.php --uri=gather/index/daily

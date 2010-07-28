@@ -1,6 +1,0 @@
-<DOC>
-<DOCNO>9471</DOCNO>
-<TEXT>
-@bysannee Wordt er SUF van, nu zegt ie weer &quot;Uw meest recente verzoek kan helaas niet worden verwerkt.&quot;
-</TEXT>
-</DOC>

@@ -1,8 +1,0 @@
-<DOC>
-<DOCNO>9708</DOCNO>
-<TEXT>
-Met twittQ_nl kunt u een poll starten.
-Stuur uw vraag als dit:
-''@twittQ_nl Wat voor huisdier heb je? A) cat B) hond''
-</TEXT>
-</DOC>

@@ -1,6 +1,0 @@
-<DOC>
-<DOCNO>7996</DOCNO>
-<TEXT>
-Het updaten van uw #Joomla website is zeer aan te raden. De bugs worden er uitgehaald en de beveiliging wordt verbeterd. Nu versie: 1.5.20
-</TEXT>
-</DOC>

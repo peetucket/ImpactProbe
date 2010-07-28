@@ -1,8 +1,0 @@
-<parameters>
-	<index>/home/adrian/Documents/GSoC_2010/src/ProjectAware/lemur/indexes/15</index>
-	<indexType>indri</indexType>
-	<memory>512000000</memory>
-	<dataFiles>/home/adrian/Documents/GSoC_2010/src/ProjectAware/lemur/docs/15/15.list</dataFiles>
-	<docFormat>trec</docFormat>
-	<stemmer>krovetz</stemmer>
-</parameters>

@@ -1,6 +1,0 @@
-<DOC>
-<DOCNO>8388</DOCNO>
-<TEXT>
-RT @hptrainingen: Bespaar tijd en kosten op het beheer van uw storage omgeving &gt; http://bit.ly/c1W0cG #hp #storageworks
-</TEXT>
-</DOC>

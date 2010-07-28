@@ -1,7 +1,0 @@
-<DOC>
-<DOCNO>7879</DOCNO>
-<TEXT>
-NULL and 70 F at Pontiac Municipal Airport, IL Winds are Southwest at 4.6 MPH (4 KT). The humidity is 94%.
- Last Update http://s1z.us/uw.htm
-</TEXT>
-</DOC>

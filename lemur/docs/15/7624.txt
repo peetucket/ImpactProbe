@@ -1,6 +1,0 @@
-<DOC>
-<DOCNO>7624</DOCNO>
-<TEXT>
-@petrah Indien u 1.0 van Joomla of 1.3 van Magento gebruikt, kan het zijn dat uw website problemen ondervindt na het migreren naar PHP 5.3.
-</TEXT>
-</DOC>

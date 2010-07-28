@@ -1,6 +1,0 @@
-<DOC>
-<DOCNO>9530</DOCNO>
-<TEXT>
-Rt @quotenet Onze site rtvdrenthe.nl is gehackt. Uw computer kan met een virus besmet raken als u de site opent. Wij werken aan het probleem
-</TEXT>
-</DOC>

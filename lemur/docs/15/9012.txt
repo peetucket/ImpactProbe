@@ -1,6 +1,0 @@
-<DOC>
-<DOCNO>9012</DOCNO>
-<TEXT>
-Welcome to the UW Service Tools twitter tweets.
-</TEXT>
-</DOC>

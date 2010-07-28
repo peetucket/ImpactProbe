@@ -1,6 +1,0 @@
-<DOC>
-<DOCNO>9179</DOCNO>
-<TEXT>
-In this Sunday's NY Times Magazine, UW computer scientists explain how to make Facebook gaffes disappear http://nyti.ms/ayWdpf
-</TEXT>
-</DOC>
