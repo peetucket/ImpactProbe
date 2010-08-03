@@ -1,7 +1,7 @@
 html, body { 
     margin: 0;
     padding: 5px;
-    height: 100%; 
+    
     border: none;
     font-family:sans-serif;
     font-size:13px;
@@ -17,10 +17,17 @@ html, body {
     color:#00CC00;
 }
 
-#project_title { width:276px; }
+/* main */
+#project_title { width:275px; }
 #add_keyword { width:150px; }
 
 #keywords_phrases, #deactivated_keywords_phrases {
     width:276px;
     height:150px;
 }
+
+.table_header { background:#278205; color:#FFFFFF; }
+
+.bg_white { background:#FFFFFF; }
+.bg_grey { background:#E1E1E1; }
+.bg_red { background:#FF0000; }

@@ -46,28 +46,29 @@
   <option value="100" <? if($field_data['num_results'] == 100) { echo("selected"); } ?>>100</option>
   <option value="250" <? if($field_data['num_results'] == 250) { echo("selected"); } ?>>250</option>
   <option value="500" <? if($field_data['num_results'] == 500) { echo("selected"); } ?>>500</option>
-  <option value="all" <? if($field_data['num_results'] == 'all') { echo("selected"); } ?>>all</option>
+  <!--<option value="all" <? if($field_data['num_results'] == 'all') { echo("selected"); } ?>>all</option>-->
 </select>
 &nbsp;&nbsp;
 <input type="submit" name="Submit" value="View">
 </form>
 
-<p><? if($clustered) { ?>
-<input type="button" name="cluster_view_btn" id="cluster_view_btn" value="View Clusters" onClick="parent.location='<?= Url::base() ?>index.php/results/cluster_view/<?= $project_data['project_id'] ?>'">
-<? } else { ?>
-<input type="button" name="cluster_btn" id="cluster_btn" value="Cluster All">
-<? } ?></p>
 
-<p>
-<? if(count($results) > 0) { 
-    $total_occurrences = 0;
+<? if(count($results) > 0) { ?>
+    <p><? if($clustered) { ?>
+    <input type="button" name="cluster_view_btn" id="cluster_view_btn" value="View Clusters" onClick="parent.location='<?= Url::base() ?>index.php/results/cluster_view/<?= $project_data['project_id'] ?>'">
+    <? } else { ?>
+    <input type="button" name="cluster_btn" id="cluster_btn" value="Cluster All">
+    <? } ?>
+    <input type="button" name="trendline_view_btn" id="trendline_view_btn" value="View Trendline" onClick="parent.location='<?= Url::base() ?>index.php/results/trendline/<?= $project_data['project_id'] ?>'"></p>
+    <p>
+    <? $total_occurrences = 0;
     foreach($keywords_phrases as $keyword_id => $keyword_phrase) { 
         echo "$keyword_phrase: $keyword_occurrences[$keyword_id]<br>";
         $total_occurrences += $keyword_occurrences[$keyword_id];
     } 
     echo "Total: $total_occurrences"; ?>
     <table width="600" border="0" cellspacing="0" cellpadding="5" style="border:1px solid #000;">
-        <tr style="background:#278205;">
+        <tr class="table_header">
             <td>&nbsp;</td>
             <td align="center"><span style="color:#FFF;"><b>Date Retrieved</b></span></td>
             <td align="center"><span style="color:#FFF;"><b>Date Published</b></span></td>
@@ -76,7 +77,7 @@
         </tr>
         <? $i = 1;
         foreach($results as $result) { ?>
-            <tr<?= ($i % 2 == 0) ? ' style="background:#ECECEC;"' : '' ; ?>>
+            <tr class="<?= ($i % 2 == 0) ? 'bg_grey' : 'bg_white' ; ?>">
                 <td align="left"><?= $i ?></td>
                 <td align="center"><?= date("m/d/y", $result['date_retrieved']) ?></td>
                 <td align="center"><? if($result['date_published'] > 0) echo date("m/d/y", $result['date_published']); ?></td>
@@ -85,8 +86,8 @@
                     echo $keyword['keyword'].": ".$keyword['num_occurrences']."<br>";
                 } ?>
                 </td>
-                <td align="center"><?= '[<a href="'.$result['url'].'" target="_blank">url</a>] [text]' 
-                //<a href="'.Url::base(TRUE).'results/text/'.$result['meta_id'].'" target="_blank">text</a>
+                <td align="center"><?= '[<a href="'.$result['url'].'" target="_blank">url</a>]' 
+                //[<a href="'.Url::base(TRUE).'results/text/'.$result['meta_id'].'" target="_blank">text</a>]
                 ?></td>
             </tr>
         <? $i++;

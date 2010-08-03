@@ -13,6 +13,14 @@ class Model_Params extends Model {
         DB::update('projects')->set($data)->where('project_id','=',$project_id)->execute();
     }
     
+    public function delete_project($project_id)
+    {
+        //DB::delete('doc_clusters')->where('project_id','=',$project_id)->execute(); 
+        DB::delete('projects')->where('project_id','=',$project_id)->limit(1)->execute();
+        DB::delete('metadata')->where('project_id','=',$project_id)->execute();
+        DB::delete('metadata_urls')->where('project_id','=',$project_id)->execute();
+    }
+    
     public function insert_keywords($project_id, Array $keywords_phrases)
     {
         foreach ($keywords_phrases as $keyword_phrase) {

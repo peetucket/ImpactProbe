@@ -74,7 +74,7 @@ class Controller_Gather extends Controller {
         // Twitter Search API parameters:
         $api_id = 1; // api_id = 1 for Twitter Search API  
         $api_url = "http://search.twitter.com/search.json"; // LATER: Get this from database
-        $results_per_page = "&rpp=50"; // Max is 100
+        $results_per_page = "&rpp=100"; // Max is 100
         $lang = ""; //"&lang=en"; // Limit search to English tweets...DOESN'T SEEM TO BE WORKING RIGHT
         
         $total_results_gathered = 0;
@@ -106,7 +106,14 @@ class Controller_Gather extends Controller {
         // &q=...+-negkey1+-negkey2+...
         // 
         
-        /* TWITTER Streaming API
+        $this->api_connect_error = 0;
+        $cur_page = 1;
+        while(TRUE) {
+            // Compile request URL
+            $request_url = $api_url.'?q='.$keyword_str.$lang.$results_per_page.'&page='.$cur_page;
+            print "Query: $request_url\n";
+            
+            /* Alternative to Search API => TWITTER Streaming API
             $request_url = "http://paradoxic7:zircon#107@stream.twitter.com/1/statuses/sample.json";
             $response = Remote::get($request_url, array(
                 CURLOPT_POST => TRUE,
@@ -114,59 +121,10 @@ class Controller_Gather extends Controller {
                     'field' => 'value',
                 )),
             ));*/
-        
-        $this->error = 0;
-        $cur_page = 1;
-        while(TRUE) {
-            // Compile request URL
-            $request_url = $api_url.'?q='.$keyword_str.$lang.$results_per_page.'&page='.$cur_page;
-            print "Query: $request_url\n";
             
-            // Connect to API & check for errors
-            $num_requests_sent = 0;
-            while(TRUE) {
-                if($num_requests_sent > $this->connection_retries) {
-                    //
-                    // TO DO: Send email notification
-                    // ...
-                    // 
-                    print "Could not connect to API with request: $request_url\n";
-                    
-                    // Add ERROR entry to gather log
-                    $this->model_gather->insert_gather_log(array(
-                        'project_id' => $project_id,
-                        'search_query' => $request_url,
-                        'date' => time(),
-                        'results_gathered' => 0,
-                        'error' => 1
-                    ));
-                    $this->error = 1;
-                    break;
-                } else {
-                    if($num_requests_sent > 0)
-                        print "Re-trying ($num_requests_sent)...\n";
-                    
-                    // Try connecting to API
-                    $response = Remote::get($request_url, array(
-                        CURLOPT_RETURNTRANSFER => TRUE
-                        //CURLOPT_USERAGENT => $_SERVER['HTTP_USER_AGENT']
-                    ));
-                    if(substr($response, 0, 12) == "REMOTE_ERROR") { // Check for custom error from /system/classes/Remote.php
-                        $error_code = preg_replace('/[^0-9]/', '', $response); // Remove all non-numeric chars
-                        print "ERROR: $error_code\n"; 
-                        $num_requests_sent++;
-                        sleep($this->wait_before_retry); // Wait before trying to reconnect
-                    } elseif(substr($response, 0, 16) == "REMOTE_FORBIDDEN") {
-                        break; // Usually means query page index is out of range & we have reached end of results
-                    } else {
-                        print "Successfully connected to Twitter Search API!\n";
-                        break; // Connection successful
-                    }
-                }
-            }
-            
+            $response = $this->api_connect($request_url);
             // Stop trying to gather if there was a connection failure
-            if($this->error) { break; }
+            if($this->api_connect_error) { break; }
             
             // Loop through each tweet (if there are results on this page)
             $json = json_decode($response, true);
@@ -197,90 +155,33 @@ class Controller_Gather extends Controller {
                             $place .= "$place_data ";
                         }
                     }
-                    // TO DO: Having issues with this...
+                    // FIX: Geolocation format screws up DB insert SQL
                     $geolocation = ""; //$geolocation = htmlspecialchars($tweet_data['geo']);
                     
                     //DEBUG:
                     //echo "<p>$username; $date_published (".date('D, d M Y H:i:s O', $date_published_timestamp).") $tweet_id; $place; $geolocation;<br>$tweet_text;</p>";
                     
-                    /* 
-                     * TO DO:
-                     * Put all of this into a method (for code reused w/ each API) 
-                     * EX: add_metadata($cache_text, Array $metadata)
-                     * 
-                     */ 
+                    $total_results_gathered += $this->add_metadata($tweet_url, $tweet_text, array(
+                        'project_id' => $this->project_id,
+                        'api_id' => $api_id,
+                        'date_published' => $date_published_timestamp,
+                        'date_retrieved' => time(),
+                        'lang' => $tweet_lang,
+                        'place' => $place,
+                        'geolocation' => $geolocation
+                    ));
                     
-                    // Find total number of words in given tweet (remove URLs & special chars first because they off-set word count)
-                    $filtered_text = preg_replace('/\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|$!:,.;]*[A-Z0-9+&@#\/%=~_|$]/i', '', $tweet_text); // Remove URLs
-                    $filtered_text = preg_replace('/[^A-Za-z0-9\s]/', '', $filtered_text); // Remove all non-alpha_numeric chars
-                    $total_words = str_word_count($filtered_text);
-                    
-                    // Check if URL has already been entered into database
-                    if($this->model_gather->url_exists($this->project_id, $tweet_url)) {
-                        
-                        //DEBUG:
-                        print "exists: $tweet_url\n";
-                        
-                        //
-                        // TO DO: Check if this page/URL was updated...if so: add new metadata entry
-                        // 
-                        
-                    } else {
-                        $keyword_metadata_entries = $this->generate_keyword_metadata($tweet_text);
-                        if(count($keyword_metadata_entries) > 0) {
-                            //DEBUG:
-                            print "added: $tweet_url\n";
-                            
-                            // Add new metadata entry 
-                            $total_results_gathered++;
-                            $url_id = $this->model_gather->insert_url(array(
-                                'project_id' => $this->project_id, 
-                                'url' => $tweet_url
-                            ));
-                            
-                            $meta_id = $this->model_gather->insert_metadata(array(
-                                'project_id' => $this->project_id,
-                                'api_id' => $api_id,
-                                'date_published' => $date_published_timestamp,
-                                'date_retrieved' => time(),
-                                'lang' => $tweet_lang,
-                                'total_words' => $total_words,
-                                'place' => $place,
-                                'geolocation' => $geolocation,
-                                'url_id' => $url_id
-                            ));
-                            
-                            foreach($keyword_metadata_entries as $keyword_metadata_entry) {
-                                $keyword_metadata_entry['meta_id'] = $meta_id;
-                                $this->model_gather->insert_keyword_metadata($keyword_metadata_entry);
-                            }
-                            
-                            /* TODO: don't need to store in DB because its stored as plain text
-                            $this->model_gather->insert_cached_text(array(
-                                'meta_id' => $meta_id,
-                                'text' => $tweet_text
-                            ));*/
-                            $this->model_gather->save_cached_text(array(
-                                'project_id' => $project_id,
-                                'meta_id' => $meta_id,
-                                'text' => $tweet_text
-                            ));
-                        } else { 
-                            //DEBUG:
-                            print "no keywords: $tweet_url\n";
-                        }
-                    }
                 }
-                
                 $cur_page++;
                 
             } else {
-                break; // No results on this page so we are DONE!
+                // No results on this page so we are DONE!
+                break;
             }
         }
         
         // Add entry to gather log 
-        if(!$this->error) {
+        if(!$this->api_connect_error) {
             $this->model_gather->insert_gather_log(array(
                 'project_id' => $project_id,
                 'search_query' => $request_url,
@@ -289,6 +190,107 @@ class Controller_Gather extends Controller {
             ));
         }
         
+    }
+    
+    // Returns response or errors after connecting to API via GET string
+    public function api_connect($request_url)
+    {
+        $num_requests_sent = 0;
+        while(TRUE) {
+            if($num_requests_sent > $this->connection_retries) {
+                //
+                // TO DO: Send email notification
+                // 
+                
+                print "Could not connect to API with request: $request_url\n";
+                
+                // Add ERROR entry to gather log
+                $this->model_gather->insert_gather_log(array(
+                    'project_id' => $this->project_id,
+                    'search_query' => $request_url,
+                    'date' => time(),
+                    'results_gathered' => 0,
+                    'error' => 1
+                ));
+                $this->api_connect_error = 1;
+                break;
+            } else {
+                if($num_requests_sent > 0)
+                    print "Re-trying ($num_requests_sent)...\n";
+                
+                // Try connecting to API
+                $response = Remote::get($request_url, array(
+                    CURLOPT_RETURNTRANSFER => TRUE
+                    //CURLOPT_USERAGENT => $_SERVER['HTTP_USER_AGENT']
+                ));
+                if(substr($response, 0, 12) == "REMOTE_ERROR") { // Check for custom error from /system/classes/Remote.php
+                    $error_code = preg_replace('/[^0-9]/', '', $response); // Remove all non-numeric chars
+                    print "ERROR: $error_code\n"; 
+                    $num_requests_sent++;
+                    sleep($this->wait_before_retry); // Wait before trying to reconnect
+                } elseif(substr($response, 0, 16) == "REMOTE_FORBIDDEN") {
+                    break; // Usually means query page index is out of range & we have reached end of results
+                } else {
+                    print "Successfully connected to API!\n";
+                    break;
+                }
+            }
+        }
+        return $response;
+    }
+    
+    // Adds new or updates existing metadata entry and returns 1 if new metadata was added
+    private function add_metadata($url, $cache_text, Array $metadata)
+    {
+        $new_entry_added = 0; // if value is 0 then $cache_text either didn't contain any keywords or URL entry already existed
+        
+        // Find total number of words in $cached_text and add to metadata
+        $metadata['total_words'] = count(explode(" ", $cache_text));
+        
+        // Check if URL has already been entered into database
+        if($this->model_gather->url_exists($this->project_id, $url)) {
+            
+            //DEBUG:
+            print "exists: $url\n";
+            
+            // TO DO: Check if this page/URL was updated...if so: add new metadata entry
+            
+        } else {
+            $keyword_metadata_entries = $this->generate_keyword_metadata($cache_text);
+            if(count($keyword_metadata_entries) > 0) {
+                $new_entry_added = 1;
+                //DEBUG:
+                print "added: $url\n";
+                
+                // Add new URL & metadata entry 
+                $url_id = $this->model_gather->insert_url(array(
+                    'project_id' => $this->project_id, 
+                    'url' => $url
+                ));
+                $metadata['url_id'] = $url_id;
+                $meta_id = $this->model_gather->insert_metadata($metadata);
+                
+                // Add metadata for each keyword found in $cache_text
+                foreach($keyword_metadata_entries as $keyword_metadata_entry) {
+                    $keyword_metadata_entry['meta_id'] = $meta_id;
+                    $this->model_gather->insert_keyword_metadata($keyword_metadata_entry);
+                }
+                
+                $this->model_gather->insert_cached_text(array(
+                    'meta_id' => $meta_id,
+                    'text' => $cache_text
+                ));
+                $this->model_gather->save_cached_text(array(
+                    'project_id' => $this->project_id,
+                    'meta_id' => $meta_id,
+                    'text' => $cache_text
+                ));
+            } else { 
+                //DEBUG:
+                print "no keywords: $url\n";
+            }
+        }
+        return $new_entry_added;
     }
     
     // Counts total number of occurances of each [active] keyword in given $text and adds an keyword entry to array for each where count > 0
@@ -351,7 +353,7 @@ class Controller_Gather extends Controller {
                 'order' => 'desc'
             );
             
-            $this->errors = "";
+            $form_errors = "";
             if($_POST) {
                 // Form validation
                 $post = new Validate($_POST);
@@ -373,7 +375,7 @@ class Controller_Gather extends Controller {
                     $result_params['order'] = strtoupper($field_data['order']);
                     
                 } else { 
-                    $this->errors = $post->errors('results');
+                    $form_errors = $post->errors('results');
                 } 
             } else {
                 // Populate form w/ empty values
@@ -389,7 +391,7 @@ class Controller_Gather extends Controller {
             
             $view->page_content->field_data                = $field_data;
             $view->page_content->results                   = $results;
-            $view->page_content->errors                    = $this->errors;
+            $view->page_content->errors                    = $form_errors;
             $this->request->response = $view;
         }
         

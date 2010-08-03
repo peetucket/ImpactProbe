@@ -9,8 +9,8 @@ return array(
         'show_chart' => 'http://localhost/ProjectAware/show_chart.php'
     ),
     'path' => array(
-        'base' => '/home/adrian/Documents/GSoC_2010/src/ProjectAware', //'/data/www/googlecode',
-        'kohana' => '/home/adrian/Documents/GSoC_2010/src/ProjectAware/kohana',  //'/data/www/googlecode/kohana'
+        'base' => '/home/adrian/Documents/GSoC_2010/src/ProjectAware',
+        'kohana' => '/home/adrian/Documents/GSoC_2010/src/ProjectAware/kohana',
         'charts' => '/home/adrian/Documents/GSoC_2010/src/ProjectAware/charts',
     ),
     'lemur' => array(

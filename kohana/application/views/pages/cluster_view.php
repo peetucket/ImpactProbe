@@ -14,19 +14,34 @@
     function isNumeric(n) {
         return !isNaN(parseFloat(n)) && isFinite(n);
     }
+
+    function startLyteframe(title, url) { 
+        var anchor = this.document.createElement('a'); 
+        anchor.setAttribute('rev', 'width: 545px; height: 490px; scrolling: auto;'); 
+        anchor.setAttribute('title', title); 
+        anchor.setAttribute('href', url); 
+        anchor.setAttribute('rel', 'lyteframe');
+        myLytebox.start(anchor, false, true); 
+        return false; 
+    }
 </script>
 
 <a href="<?= Url::base().'index.php/results/view/'.$project_data['project_id'] ?>">&laquo; Back</a>
 <h3>Clustering - <?= $project_data['project_title'] ?></h3>
 
 <form name="recluster_form" id="recluster_form" method="post" action="<?= Url::base().'index.php/results/cluster/'.$project_data['project_id'] ?>">
-<p><b>Last clustered:</b> <?= date("m/d/y", $project_data['date_clustered']) ?><br>
+<p><b>Last clustered:</b> <?= date("m/d/y", $cluster_log['date_clustered']) ?> (<?= $cluster_log['num_docs'] ?> documents)<br>
 <b>Threshold:</b>
-<input name="cluster_threshold" type="text" id="cluster_threshold" value="<?= $project_data['cluster_threshold'] ?> " size="3" maxlength="8">
+<input name="cluster_threshold" type="text" id="cluster_threshold" value="<?= $cluster_log['threshold'] ?> " size="3" maxlength="8">
 <input type="submit" id="submit_btn" name="submit_btn" value="Recluster">
 </p>
 </form>
 
-<img src="<?= Kohana::config('myconf.url.show_chart').'?datafile='.$chart_datafile ?>">
+<?= $chart_html ?>
 
-<p>[<a href="<?= Url::base().'index.php/results/singleton_clusters/'.$project_data['project_id'] ?>" rel="lyteframe" title="Singleton Clusters (<?= $singleton_clusters ?>)" rev="width: 400px; height: 300px; scrolling: no;">view singleton clusters (<?= $singleton_clusters ?>)</a>]</p>
+<? if($singleton_clusters > 0) { ?>
+<p>[<a href="javascript:startLyteframe('Singleton clusters (<?= $singleton_clusters ?> total)', '<?= Url::base().'index.php/results/singleton_clusters/'.$project_data['project_id'] ?>')">view singleton clusters (<?= $singleton_clusters ?>)</a>]</p>
+
+<? /* ***OLD lyteframe ***
+<p>[<a href="<?= Url::base().'index.php/results/singleton_clusters/'.$project_data['project_id'] ?>" rel="lyteframe" title="Singleton Clusters (<?= $singleton_clusters ?>)" rev="width: <?= Kohana::config('myconf.lyteframe.width') ?>; height: <?= Kohana::config('myconf.lyteframe.height') ?>; scrolling: yes;">view singleton clusters (<?= $singleton_clusters ?>)</a>]</p> */ ?>
+<? } ?>

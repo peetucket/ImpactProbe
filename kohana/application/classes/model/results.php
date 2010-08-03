@@ -26,10 +26,10 @@ class Model_Results extends Model {
         if($params['date_to'] > 0) 
             $query->where('metadata.date_published','<=',$params['date_to']);
         
-        if($params['num_results'] > 0) 
+        if($params['num_results'] > 0)
             $query->limit($params['num_results']);
         
-        $query->order_by('metadata.date_retrieved', strtoupper($params['order']))
+        $query->order_by('metadata.date_published', strtoupper($params['order']))
               ->order_by('keyword_metadata.meta_id'); // Groups `keyword_metadata` rows together for each `metadata` entry
         
         return $query->execute()->as_array();
@@ -38,6 +38,25 @@ class Model_Results extends Model {
     public function get_keyword_metadata($meta_id)
     {
         return DB::select()->from('keyword_metadata')->where('meta_id','=',$meta_id)->execute()->as_array();
+    }
+    
+    public function num_metadata_entries($project_id, $start_date, $end_date)
+    {
+        return DB::query(Database::SELECT, "SELECT COUNT(meta_id) AS `total` FROM `metadata` WHERE (`project_id` = $project_id AND `date_published` >= $start_date AND `date_published` < $end_date)")->execute()->get('total');
+    }
+    
+    // Get date_published for oldest or most recently published metadata entry from given project
+    public function metadata_edge_date($project_id, $edge)
+    {
+        $order_by = ($edge == 'oldest') ? 'ASC' : 'DESC';
+        $result = DB::select('date_published')->from('metadata')->where('project_id','=',$project_id)->order_by('date_published', $order_by)->limit(1)->execute()->as_array();
+        return $result[0]['date_published'];
+    }
+    
+    public function get_cached_text($meta_id)
+    {
+        $result = DB::select('text')->from('cached_text')->where('meta_id','=',$meta_id)->limit(1)->execute()->as_array();
+        return $result[0]['text'];
     }
     
     public function delete_clusters($project_id)
@@ -64,6 +83,20 @@ class Model_Results extends Model {
         return DB::select()->from('doc_clusters')
                            ->where('project_id','=',$project_id)
                            ->order_by('cluster_id', 'ASC')->execute()->as_array();
+    }
+    
+    public function get_cluster_summary($project_id, $cluster_id, $params)
+    {
+         $query = DB::select('doc_clusters.score', 'cached_text.text')->from('doc_clusters')
+                              ->where('project_id','=',$project_id)
+                              ->where('cluster_id','=',$cluster_id)
+                              ->join('cached_text')->on('doc_clusters.meta_id','=','cached_text.meta_id');
+        if($params['num_results'] > 0) 
+            $query->limit($params['num_results']);
+        
+        $query->order_by('doc_clusters.score', $params['score_order']);
+        
+        return $query->execute()->as_array();
     }
     
     public function update_cluster_log($data)

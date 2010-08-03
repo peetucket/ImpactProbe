@@ -71,7 +71,6 @@ class Controller_Params extends Controller {
     
     public function action_modify($project_id = 0)
     {
-        // Get project data
         $project_data = $this->model_params->get_project_data($project_id);
         
         // Verify that project exists
@@ -149,5 +148,17 @@ class Controller_Params extends Controller {
     {
         if(!array_key_exists('keywords_phrases', $this->field_data))
             $array->error($field, 'keywords_not_empty', array($array[$field]));
+    }
+
+    public function action_delete($project_id)
+    {
+        $project_data = $this->model_params->get_project_data($project_id);
+        // Verify that project exists
+        if(count($project_data) == 0) {
+            echo "<p>Project with this ID does not exist.</p>"; 
+        } else {
+            $this->model_params->delete_project($project_id);
+            $this->request->redirect(''); // Redirect to "Home" page
+        }
     }
 }

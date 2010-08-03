@@ -40,7 +40,7 @@
 <p>
 <? if(count($results) > 0) { ?>
     <table width="600" border="0" cellspacing="0" cellpadding="5" style="border:1px solid #000;">
-        <tr style="background:#278205;">
+        <tr class="table_header">
             <td>&nbsp;</td>
             <td align="center"><span style="color:#FFF;"><b>Date</b></span></td>
             <td align="center"><span style="color:#FFF;"><b>Results</b></span></td>
@@ -48,11 +48,11 @@
         </tr>
         <? $i = 1;
         foreach($results as $result) { ?>
-            <tr<? if($result['error']) {
-                echo ' style="background:#FF0000;"';
+            <tr class="<? if($result['error']) {
+                echo 'bg_red';
             } else { 
-                echo ($i % 2 == 0) ? ' style="background:#ECECEC;"' : '' ;
-            } ?>>
+                echo ($i % 2 == 0) ? 'bg_grey' : 'bg_white' ;
+            } ?>">
                 <td align="left"><?= $i ?></td>
                 <td align="center"><?= date("m/d/y", $result['date']) ?></td>
                 <td align="center"><?= $result['results_gathered'] ?></td>
