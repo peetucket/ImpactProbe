@@ -30,9 +30,13 @@
 <h3>Clustering - <?= $project_data['project_title'] ?></h3>
 
 <form name="recluster_form" id="recluster_form" method="post" action="<?= Url::base().'index.php/results/cluster/'.$project_data['project_id'] ?>">
-<p><b>Last clustered:</b> <?= date("m/d/y", $cluster_log['date_clustered']) ?> (<?= $cluster_log['num_docs'] ?> documents)<br>
+<p><b>Last clustered:</b> <?= $cluster_log['date_clustered'] ?> (<?= $cluster_log['num_docs'] ?> documents)<br>
 <b>Threshold:</b>
 <input name="cluster_threshold" type="text" id="cluster_threshold" value="<?= $cluster_log['threshold'] ?> " size="3" maxlength="8">
+<select name="cluster_order">
+   <option value="arbitrarily"<? if($cluster_log['order'] == 'arbitrarily') { echo " selected"; } ?>>scatter clusters</option>
+   <option value="cluster_size"<? if($cluster_log['order'] == 'cluster_size') { echo " selected"; } ?>>order by cluster size</option>
+</select>
 <input type="submit" id="submit_btn" name="submit_btn" value="Recluster">
 </p>
 </form>

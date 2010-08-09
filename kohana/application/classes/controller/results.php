@@ -5,7 +5,11 @@ class Controller_Results extends Controller {
     public function before() {
         parent::before();
         $this->model_results = new Model_Results;
-        $this->model_params  = new Model_Params;
+        
+        $this->chart_api_url = "http://chart.apis.google.com/chart";
+        $this->date_format = "M-d-Y";
+        $this->chart_w = 800; 
+        $this->chart_h = 370;
     }
     
     public function action_index()
@@ -15,7 +19,7 @@ class Controller_Results extends Controller {
 
     public function action_view($project_id = 0)
     {
-        $project_data = $this->model_params->get_project_data($project_id);
+        $project_data = $this->model_results->get_project_data($project_id);
         
         // Verify that project exists
         if(count($project_data) == 0) {
@@ -46,19 +50,19 @@ class Controller_Results extends Controller {
             $form_errors = "";
             if($_POST) {
                 // Form validation
-                $post = new Validate($_POST);
-                $post->rule('datef_m', 'digit')->rule('datef_d', 'digit')->rule('datef_y', 'digit')
-                     ->rule('datet_m', 'digit')->rule('datet_d', 'digit')->rule('datet_y', 'digit');
+                $post = Validate::factory($_POST)
+                      ->rule('datef_m', 'digit')->rule('datef_d', 'digit')->rule('datef_y', 'digit')
+                      ->rule('datet_m', 'digit')->rule('datet_d', 'digit')->rule('datet_y', 'digit');
                  
                 $field_data = $post->as_array(); // For form re-population
                 
                 if ($post->check()) {
                     
                     // Process results display parameters
-                    if($field_data['datef_m'] > 0 && $field_data['datef_y'] > 0 && $field_data['datef_y'] > 0)
+                    if($field_data['datef_m'] > 0 AND $field_data['datef_y'] > 0 AND $field_data['datef_y'] > 0)
                         $result_params['date_from'] = mktime(0, 0, 0, $field_data['datef_m'], $field_data['datef_d'], $field_data['datef_y']);
                     
-                    if($field_data['datet_m'] > 0 && $field_data['datet_y'] > 0 && $field_data['datet_y'] > 0)
+                    if($field_data['datet_m'] > 0 AND $field_data['datet_y'] > 0 AND $field_data['datet_y'] > 0)
                         $result_params['date_to'] = mktime(0, 0, 0, $field_data['datet_m'], $field_data['datet_d'], $field_data['datet_y']);
                     
                     $result_params['num_results'] = $field_data['num_results'];
@@ -78,38 +82,64 @@ class Controller_Results extends Controller {
                 );
             } 
             
-            // Get results & re-organize results so there is only one row per metadata entry & calculate stats
-            $results_db = $this->model_results->get_results($project_id, $result_params);
+            // Get results & re-organize them so there is only one row per metadata entry & calculate stats
             $results = array();
-            foreach($results_db as $row) {
-                if(array_key_exists($row['meta_id'], $results)) {
-                    // Add keyword metadata to existing metadata entry
-                    array_push($results[$row['meta_id']]['keywords'], 
-                    array(
-                        'keyword' => $keywords_phrases[$row['keyword_id']],
-                        'num_occurrences' => $row['num_occurrences']
-                    ));
-                } else {
-                    // Add new metadata entry
-                    $results[$row['meta_id']] = array(
-                        'meta_id' => $row['meta_id'],
-                        'url' => $row['url'],
-                        'api_name' => $row['api_name'],
-                        'date_retrieved' => $row['date_retrieved'],
-                        'date_published' => $row['date_published'],
-                        'total_words' => $row['total_words'],
-                        'keywords' => array(array(
-                            'keyword' => $keywords_phrases[$row['keyword_id']],
-                            'num_occurrences' => $row['num_occurrences']
-                        ))
-                    );
+            $i = 1;
+            $result_params['limit'] = 1000;
+            $result_params['offset'] = 0;
+            do { // Collect 1000 database results at a time to prevent MySQL SELECT failure
+                $results_db = $this->model_results->get_results($project_id, $result_params);
+                $result_params['offset'] += $result_params['limit'];
+                $num_sub_results = count($results_db);
+                foreach($results_db as $row) {
+                    // Do not generate full results display (only summary) if displaying all results
+                    if($result_params['num_results'] > 0) {
+                        if($i > $result_params['num_results'])
+                            break;
+                        
+                        if(array_key_exists($row['meta_id'], $results)) {
+                            // Add keyword metadata to existing metadata entry
+                            array_push($results[$row['meta_id']]['keywords'], 
+                            array(
+                                'keyword' => $keywords_phrases[$row['keyword_id']],
+                                'num_occurrences' => $row['num_occurrences']
+                            ));
+                        } else {
+                            // Add new metadata entry
+                            $results[$row['meta_id']] = array(
+                                'meta_id' => $row['meta_id'],
+                                'url' => $row['url'],
+                                'api_name' => $row['api_name'],
+                                'date_retrieved' => $row['date_retrieved'],
+                                'date_published' => $row['date_published'],
+                                'total_words' => $row['total_words'],
+                                'keywords' => array(array(
+                                    'keyword' => $keywords_phrases[$row['keyword_id']],
+                                    'num_occurrences' => $row['num_occurrences']
+                                ))
+                            );
+                            $i++;
+                        }
+                    }
+                    $keyword_occurrences[$row['keyword_id']] += $row['num_occurrences'];
                 }
-                $keyword_occurrences[$row['keyword_id']] += $row['num_occurrences'];
-            }
+            } while($num_sub_results == $result_params['limit']);
+            
+            // Determine grand total of results & date published range
+            $total_results = $this->model_results->num_metadata_entries($project_id, $result_params['date_from'], $result_params['date_to']);
+            $edge_date_from = $this->model_results->metadata_edge_date($project_id, 'oldest');
+            $edge_date_to = $this->model_results->metadata_edge_date($project_id, 'most_recent');
+            if($result_params['date_from'] > 0 AND $result_params['date_from'] > $edge_date_to)
+                $edge_date_from = $result_params['date_from'];
+            if($result_params['date_to'] > 0 AND $result_params['date_to'] < $edge_date_to)
+                $edge_date_to = $result_params['date_to'];
+            $date_published_range = date($this->date_format, $edge_date_from)." - ".date($this->date_format, $edge_date_to);
             
             $view->page_content->project_data              = $project_data;
             $view->page_content->field_data                = $field_data;
             $view->page_content->results                   = $results;
+            $view->page_content->total_results             = $total_results;
+            $view->page_content->date_published_range      = $date_published_range;
             $view->page_content->keywords_phrases          = $keywords_phrases;
             $view->page_content->keyword_occurrences       = $keyword_occurrences;
             $view->page_content->errors                    = $form_errors;
@@ -118,14 +148,14 @@ class Controller_Results extends Controller {
         }
         
         //
-        // TO DO:
+        // TO DO: Allow users to view documents with keywords highlighted
         // $highlighted_text = preg_replace("/\b($keyword)\b/ie", "<b>$keyword???</b>", "test.test tester; tbhis is a TEST; TEst ME.");
         // 
     }
     
     public function action_trendline($project_id = 0)
     {
-        $project_data = $this->model_params->get_project_data($project_id);
+        $project_data = $this->model_results->get_project_data($project_id);
         // Verify that project exists
         if(count($project_data) == 0) {
             echo "<p>Project with this ID does not exist.</p>"; 
@@ -137,106 +167,169 @@ class Controller_Results extends Controller {
             
             $view->page_content = View::factory('pages/trendline_view');
             
+            // Assign date range & scale parameters
+            // ...
+            
             // Get chart data & params
-            $chart_w = 800; 
-            $chart_h = 350;
-            $chartfile = Kohana::config('myconf.path.charts')."/trendline_$project_id.gch";
-            //if(!file_exists($chartfile)) {
-                $start_date = $this->model_results->metadata_edge_date($project_id, 'oldest');
-                $end_date = $this->model_results->metadata_edge_date($project_id, 'most_recent');
-                $trendline_data = $this->get_trendline_data($project_id, $start_date, $end_date);
+            $date_from = $this->model_results->metadata_edge_date($project_id, 'oldest');
+            $date_to = $this->model_results->metadata_edge_date($project_id, 'most_recent');
+            $trendline_data = $this->get_trendline_data($project_id, $date_from, $date_to);
+            
+            // Generate chart data
+            $x_vals = ""; $y_vals = ""; $trendline_dates = "";
+            $num_days = 0;
+            $max_entries = 0;
+            foreach($trendline_data as $trendline_point) {
+                $num_days++;
+                if($trendline_point['num_entries'] > $max_entries)
+                    $max_entries = $trendline_point['num_entries'];
                 
-                // Generate chart data
-                $x_vals = ""; $y_vals = "";
-                $num_days = 0;
-                $max_entries = 0;
-                //$trendline_data = array(3,4,8,0,2,9,10);
-                foreach($trendline_data as $num_entries) {
-                    $num_days++;
-                    if($num_entries > $max_entries)
-                        $max_entries = $num_entries;
-                    
-                    $x_vals .= "$num_days,";
-                    $y_vals .= "$num_entries,";
-                }
-                // Remove trailing commas
-                $x_vals = substr($x_vals, 0, -1); $y_vals = substr($y_vals, 0, -1);
-                
-                /***Make axis labels:
-                    chxt=x,x,y,y
-                    chxl=1:|<X-AXIS TITLE>|3:|<Y-AXIS TITLE>
-                    chxp=1,50|3,50
-                
-                    chxt=x,y,x
-                    chxl=
-                    0:|Jan|July|Jan|July|Jan|
-                    1:|0|50|100|
-                    2:|2005|2006|2007
-                ***/
-                
-                $chart_data = array(
-                    "type" => "lxy",
-                    "axes" => "x,y",
-                    "size" => $chart_w."x".$chart_h, // `width` x `height` (in px)
-                    "range" => "1,$num_days,0,$max_entries", // min,max(x-axis),min,max(y-axis)
-                    "range_display" => "0,1,$num_days|1,0,$max_entries", // axis_id,min,max|...
-                    "data" => "t:$x_vals|$y_vals"
-                );
-                
-                // Save chart data as text file (.gch) to be read by show_chart.php
-                $fh_chartfile = fopen($chartfile, 'w') or die("$chartfile: cannot open file for writing");
-                fwrite($fh_chartfile, "cht=".$chart_data['type']."\nchs=".$chart_data['size']."\nchxt=".$chart_data['axes']."\nchds=".$chart_data['range']."\nchxr=".$chart_data['range_display']."\nchd=".$chart_data['data']);
-                fclose($fh_chartfile);
-            //}
+                $x_vals .= "$num_days,";
+                $y_vals .= $trendline_point['num_entries'].",";
+                $trendline_dates .= date($this->date_format, $trendline_point['timestamp']).",";
+            }
+            // Remove trailing commas
+            $x_vals = substr($x_vals, 0, -1); $y_vals = substr($y_vals, 0, -1); $trendline_dates = substr($trendline_dates, 0, -1);
+            
+            /***Make axis labels:
+                chxt=x,x,y,y
+                chxl=1:|<X-AXIS TITLE>|3:|<Y-AXIS TITLE>
+                chxp=1,50|3,50
+            
+                chxt=x,y,x
+                chxl=
+                0:|Jan|July|Jan|July|Jan|
+                1:|0|50|100|
+                2:|2005|2006|2007
+            ***/
+            
+            $chart_data = array(
+                "type" => "lxy",
+                "axes" => "x,y",
+                "size" => $this->chart_w."x".$this->chart_h, // `width` x `height` (in px)
+                "range" => "1,$num_days,0,$max_entries", // min,max(x-axis),min,max(y-axis)
+                "range_display" => "0,1,$num_days|1,0,$max_entries", // axis_id,min,max|...
+                "data" => "t:$x_vals|$y_vals"
+            );
+            
+            // Save chart data as text file (.gch) to be read by show_chart.php
+            $chart_file = Kohana::config('myconf.path.charts')."/trendline_$project_id.gch";
+            $fh_chartfile = fopen($chart_file, 'w') or die("$chart_file: cannot open file for writing");
+            fwrite($fh_chartfile, "cht=".$chart_data['type']."\nchs=".$chart_data['size']."\nchxt=".$chart_data['axes']."\nchds=".$chart_data['range']."\nchxr=".$chart_data['range_display']."\nchd=".$chart_data['data']);
+            fclose($fh_chartfile);
+            
+            // In order to make dates popup as tooltips we must create a mirrored scatter plot and use its data to generate the image map
+            $chart_map_file = Kohana::config('myconf.path.charts')."/trendline_map_$project_id.gch";
+            $chart_data['type'] = "s";
+            $fh_chartfile = fopen($chart_map_file, 'w') or die("$chart_map_file: cannot open file for writing");
+            fwrite($fh_chartfile, "cht=".$chart_data['type']."\nchs=".$chart_data['size']."\nchxt=".$chart_data['axes']."\nchds=".$chart_data['range']."\nchxr=".$chart_data['range_display']."\nchd=".$chart_data['data']."\nmpd=$trendline_dates");
+            // NOTICE: Alter size of marker???
+            fclose($fh_chartfile);
             
             // Generate chart HTML
             $chid = md5(uniqid(rand(), true)); // Chart ID sent to Google Chart API
-            $chart_html = '<img src="'.Kohana::config('myconf.url.show_chart').'?datafile='.$chartfile.'&chid='.$chid.'" width="'.$chart_w.'" height="'.$chart_h.'">';
+            $this->chart_html = '<img src="'.Kohana::config('myconf.url.show_chart').'?datafile='.$chart_file.'&chid='.$chid.'" width="'.$this->chart_w.'" height="'.$this->chart_h.'" usemap="#chart_map">
+<map name="chart_map">'.$this->generate_trendline_map($project_id, $chid, $chart_map_file).'</map>';
             
-            $date_range = date("M d, Y", $start_date)." (day 1) - ".date("M d, Y", $end_date)." (day $num_days)";
+            $date_range = date($this->date_format, $date_from)." (day 1) - ".date($this->date_format, $date_to)." (day $num_days)";
             
             $view->page_content->project_data = $project_data;
-            $view->page_content->chart_html = $chart_html;
+            $view->page_content->chart_html = $this->chart_html;
             $view->page_content->date_range = $date_range;
             $this->request->response = $view;
         }
     }
     
-    private function get_trendline_data($project_id = 0, $start_date, $end_date)
+    private function get_trendline_data($project_id = 0, $date_from, $date_to)
     {
         // Gather total number of metadata entries from each day
         $trendline_data = array();
-        $cur_date = mktime(0, 0, 0, date("m", $start_date), date("d", $start_date), date("Y", $start_date)); 
+        $cur_date = mktime(0, 0, 0, date("m", $date_from), date("d", $date_from), date("Y", $date_from)); 
         $secs_in_day = 24*60*60;
-        while($cur_date <= $end_date) {
+        while($cur_date <= $date_to) {
             $num_metadata_entries = $this->model_results->num_metadata_entries($project_id, $cur_date, ($cur_date+$secs_in_day));
-            array_push($trendline_data, $num_metadata_entries);
+            array_push($trendline_data, array(
+                'timestamp' => $cur_date,
+                'num_entries' => $num_metadata_entries
+            ));
             $cur_date += $secs_in_day; 
         }
         return $trendline_data;
+    }
+    
+    // Generate chart image map HTML for trendline graph (make graph clickable)
+    private function generate_trendline_map($project_id, $chid, $chart_file) 
+    {
+        $api_url = $this->chart_api_url."?chid=$chid";
+
+        // Open chart file and extract data
+        $file_handle = fopen($chart_file, "r");
+        $chart_params = array();
+        while (!feof($file_handle)) {
+            $line = rtrim(fgets($file_handle));
+            $param_ex = explode("=", $line);
+            $param_name = $param_ex[0]; 
+            $param_vals = $param_ex[1];
+            if($param_name == "mpd") { 
+                // List of dates for each point in order displayed on chart
+                $trendline_dates = explode(",", $param_vals);
+            } else { 
+                // Parameter is chart param 
+                $chart_params[$param_name] = $param_vals;
+                if($param_name == "chd") {
+                    $chd_ex = explode("|", substr($param_vals, 2));
+                    $num_entries = explode(",", $chd_ex[1]);
+                }
+            }
+        }
+        fclose($file_handle);
+        $chart_params['chof'] = 'json'; // tell API to return image map HTML
+        
+        // Send the POST request, parse json data, & compile image map HTML
+        $response = Remote::get($api_url, array(
+            CURLOPT_POST => TRUE,
+            CURLOPT_POSTFIELDS => http_build_query($chart_params)
+        ));
+        
+        $image_map_html = '';
+        $json = json_decode($response, true);
+        $num_results = count($json['chartshape']);
+        if($num_results > 0) {
+            $i = 0;
+            foreach($json['chartshape'] as $map_item) {
+                if($map_item['type'] == "CIRCLE") {
+                    $coords_str = implode(",", $map_item['coords']);
+                    $title = $trendline_dates[$i]. " (".$num_entries[$i]." entries)";
+                    //$href = "javascript:startLyteframe('".$title."', '".Url::base()."index.php/results/cluster_summary/$project_id/".$cluster_ids[$i]."')";
+                    $href = "#";
+                    $image_map_html .= '<area name="'.$map_item['name'].'" shape="'.$map_item['type'].'" class="noborder icolorff0000" coords="'.$coords_str.'" href="'.$href.'" title="'.$title.'">';
+                    $i++;
+                }
+            }
+        }
+        return $image_map_html;
     }
     
     public function action_cluster($project_id = 0)
     {
         // The lower $cluster_threshold => the less clusters
         $cluster_threshold = 0.25;
+        $cluster_order = 'arbitrarily';
         if($_POST) {
             $_POST['cluster_threshold'] = trim($_POST['cluster_threshold']);
             if(is_numeric($_POST['cluster_threshold']))
                 $cluster_threshold = $_POST['cluster_threshold'];
+            if($_POST['cluster_order'] == 'cluster_size')
+                $cluster_order = 'cluster_size';
         }
         
         // TO DO: parameterize clustering
         //        ex: limit to only docments within a certain time window
         
-        // Build Lemur Index
         $this->build_lemur_index($project_id);
         
-        //
         // Generate cluster params & perform clustering
-        // -> NOTE: might want to use OfflineCluster (but it only clusters first 100 docs in index)
-        // -> NOTE: must delete clusterIndex.cl (which is created in dir where script was executed)
-        // 
+        // NOTE: must delete clusterIndex.cl in order to re-cluster (which is created in dir where script was executed)
         $this->cluster_params = $this->params_dir."/cluster.params";
         $fh_cluster_params = fopen($this->cluster_params, 'w') or die($this->cluster_params.': cannot open file for writing');
         fwrite($fh_cluster_params, "<parameters>\n\t<index>".$this->index_dir."</index>\n\t<threshold>$cluster_threshold</threshold>\n</parameters>");
@@ -257,17 +350,18 @@ class Controller_Results extends Controller {
         $this->model_results->update_cluster_log(array(
             'project_id' => $project_id,
             'threshold' => $cluster_threshold,
+            'order' => $cluster_order,
             'num_docs' => count($cluster_data),
             'date_clustered' => time()
         ));
         
         // Delete chart file if it exists
-        $chartfile = Kohana::config('myconf.path.charts')."/cluster_$project_id.gch";
-        if(file_exists($chartfile))
-            unlink($chartfile);
+        $chart_file = Kohana::config('myconf.path.charts')."/cluster_$project_id.gch";
+        if(file_exists($chart_file))
+            unlink($chart_file);
         
         // Redirect to cluster view
-        $this->request->redirect("results/cluster_view/$project_id");
+        $this->request->redirect("results/cluster_view/$project_id/$cluster_order");
     }
 
     // Build Lemur Index from a directory of cached text documents
@@ -283,14 +377,14 @@ class Controller_Results extends Controller {
         // Create params directory if it does not exist already
         $this->params_dir = Kohana::config('myconf.lemur.params')."/$project_id";
         if(!is_dir($this->params_dir))
-            mkdir($this->params_dir);
+            mkdir($this->params_dir, 0777);
         
         if($dh_docs = opendir($this->docs_dir)) {
             // Create list of documents to index (overwrite existing)
             $this->docs_list = $this->params_dir.'/index.list';
             $fh_doclist = fopen($this->docs_list, 'w') or die($this->docs_list.': cannot open file for writing');
             while (false !== ($doc_filename = readdir($dh_docs))) {
-                if ($doc_filename != "." && $doc_filename != "..")
+                if ($doc_filename != "." AND $doc_filename != "..")
                     fwrite($fh_doclist, $this->docs_dir."/$doc_filename\n");
             }
             closedir($dh_docs); 
@@ -298,12 +392,11 @@ class Controller_Results extends Controller {
         }
         
         // Generate index params & build index
-        // TO DO: add stopwords file...
         $this->index_params = $this->params_dir."/index.params";
         $this->index_dir = Kohana::config('myconf.lemur.indexes')."/$project_id";
         if(!file_exists($this->index_params)) {
             $fh_index = fopen($this->index_params, 'w') or die($this->index_params.': cannot open file for writing');
-            fwrite($fh_index, "<parameters>\n\t<index>".$this->index_dir."</index>\n\t<indexType>indri</indexType>\n\t<memory>512000000</memory>\n\t<dataFiles>".$this->docs_list."</dataFiles>\n\t<docFormat>trec</docFormat>\n\t<stemmer>krovetz</stemmer>\n</parameters>");
+            fwrite($fh_index, "<parameters>\n\t<index>".$this->index_dir."</index>\n\t<indexType>indri</indexType>\n\t<memory>512000000</memory>\n\t<dataFiles>".$this->docs_list."</dataFiles>\n\t<stopwords>".Kohana::config('myconf.lemur.stopwords_list')."</stopwords>\n\t<docFormat>trec</docFormat>\n\t<stemmer>krovetz</stemmer>\n</parameters>");
             fclose($fh_index);
         }
         
@@ -326,9 +419,9 @@ class Controller_Results extends Controller {
         }
     }
     
-    public function action_cluster_view($project_id = 0)
+    public function action_cluster_view($project_id = 0, $cluster_order = 'arbitrarily')
     { 
-        $project_data = $this->model_params->get_project_data($project_id);
+        $project_data = $this->model_results->get_project_data($project_id);
         $cluster_log = $this->model_results->get_cluster_log($project_id);
         
         // Verify that project exists
@@ -337,6 +430,7 @@ class Controller_Results extends Controller {
         } else {
             $project_data = array_pop($project_data);
             $cluster_log = array_pop($cluster_log);
+            $cluster_log['date_clustered'] = date($this->date_format, $cluster_log['date_clustered']);
             
             $view = View::factory('template');
             $view->page_title = $project_data['project_title']." - View Clusters";
@@ -353,30 +447,27 @@ class Controller_Results extends Controller {
             }
             
             // Get chart data & params
-            $chart_w = 800; 
-            $chart_h = 350;
-            $chartfile = Kohana::config('myconf.path.charts')."/cluster_$project_id.gch";
-            if(!file_exists($chartfile)) {
-                // Find max cluster size (for normalization)
-                $clusters_sorted_desc = $this->order_array_numeric($clusters, 'num_docs', "DESC");
-                foreach($clusters_sorted_desc as $cluster) {
-                    $max_cluster_size = $cluster['num_docs'];
-                    break;
-                }
-                $clusters_sorted_asc = array(); // ..To save memory
+            $chart_file = Kohana::config('myconf.path.charts')."/cluster_$project_id.gch";
+            if(!file_exists($chart_file)) {
+                // Find max & min cluster sizes (for normalization)
+                $clusters_sorted_asc = $this->order_array_numeric($clusters, 'num_docs', 'ASC');
+                $min_cluster_size_data = current($clusters_sorted_asc);
+                $min_cluster_size = $min_cluster_size_data['num_docs'];
+                $max_cluster_size_data = end($clusters_sorted_asc);
+                $max_cluster_size = $max_cluster_size_data['num_docs'];
+                
+                // Check if user selected to order points by cluster size
+                if($cluster_order == 'cluster_size')
+                    $clusters = $clusters_sorted_asc;
+                unset($clusters_sorted_asc); // ..To save memory
                 
                 // Generate chart data
-                $clusters_sorted_asc = $this->order_array_numeric($clusters, 'num_docs');
                 $num_clusters = 0;
                 $x_vals = ""; $y_vals = ""; $size_vals = ""; $cluster_ids = ""; $cluster_sizes = "";
-                $min_cluster_size = 0;
                 $min_dot_size = 4; // So the smallest can actually be seen
-                foreach($clusters_sorted_asc as $cluster_id => $cluster_data) {
+                foreach($clusters as $cluster_id => $cluster_data) {
                     if($cluster_data['num_docs'] > 1) {
                         $num_clusters++;
-                        
-                        if($min_cluster_size == 0)
-                            $min_cluster_size = $cluster_data['num_docs'];
                        
                         // Normalize dot sizes they are between 0-100
                         if($max_cluster_size == $min_cluster_size) {
@@ -398,17 +489,10 @@ class Controller_Results extends Controller {
                 // Remove trailing commas
                 $x_vals = substr($x_vals, 0, -1); $y_vals = substr($y_vals, 0, -1); $size_vals = substr($size_vals, 0, -1); $cluster_ids = substr($cluster_ids, 0, -1); $cluster_sizes = substr($cluster_sizes, 0, -1); 
                 
-                /***Make axis labels:
-                    chxt=x,x,y,y
-                    chxl=1:|<X-AXIS TITLE>|3:|<Y-AXIS TITLE>
-                    chxp=1,50|3,50
-                    chxs=... (axes label number formatting)
-                ***/
-                
                 $chart_data = array(
                     "type" => "s",
                     "axes" => "x,y",
-                    "size" => $chart_w."x".$chart_h, // `width` x `height` (in px)
+                    "size" => $this->chart_w."x".$this->chart_h, // `width` x `height` (in px)
                     "range" => "0,$num_clusters,0,1,1,100", // min,max(x-axis),min,max(y-axis),min,max(dot size)
                     "range_display" => "0,1,$num_clusters|1,0,1", // axis_id,min,max|...
                     "dot_style" => "o,0000FF,0,,80",
@@ -416,21 +500,20 @@ class Controller_Results extends Controller {
                 );
                 
                 // Save chart data as text file (.gch) to be read by show_chart.php
-                $fh_chartfile = fopen($chartfile, 'w') or die("$chartfile: cannot open file for writing");
+                $fh_chartfile = fopen($chart_file, 'w') or die("$chart_file: cannot open file for writing");
                 fwrite($fh_chartfile, "cht=".$chart_data['type']."\nchs=".$chart_data['size']."\nchxt=".$chart_data['axes']."\nchds=".$chart_data['range']."\nchxr=".$chart_data['range_display']."\nchm=".$chart_data['dot_style']."\nchd=".$chart_data['data']."\nmpids=$cluster_ids\nmps=$cluster_sizes");
                 fclose($fh_chartfile);
             }
             
             // Generate chart HTML
             $chid = md5(uniqid(rand(), true)); // Chart ID sent to Google Chart API
-            $image_map_html = $this->generate_chart_map($project_id, $chid, $chartfile);
-            $chart_html = '<img src="'.Kohana::config('myconf.url.show_chart').'?datafile='.$chartfile.'&chid='.$chid.'" width="'.$chart_w.'" height="'.$chart_h.'" usemap="#chart_map">
-<map name="chart_map">'.$image_map_html.'</map>';
+            $this->chart_html = '<div><img src="'.Kohana::config('myconf.url.show_chart').'?datafile='.$chart_file.'&chid='.$chid.'" width="'.$this->chart_w.'" height="'.$this->chart_h.'" class="mapper" usemap="#chart_map"></div>
+<map name="chart_map">'.$this->generate_cluster_map($project_id, $chid, $chart_file).'</map>';
             
             $view->page_content->project_data = $project_data;
             $view->page_content->cluster_log = $cluster_log;
             $view->page_content->singleton_clusters = $singleton_clusters;
-            $view->page_content->chart_html = $chart_html;
+            $view->page_content->chart_html = $this->chart_html;
             $this->request->response = $view;
         }
     }
@@ -461,10 +544,10 @@ class Controller_Results extends Controller {
         return $clusters;
     }
     
-    // Generate chart image map HTML (make plot clickable)
-    private function generate_chart_map($project_id, $chid, $chart_file) 
+    // Generate chart image map HTML for cluster plot (make plot clickable)
+    private function generate_cluster_map($project_id, $chid, $chart_file) 
     {
-        $api_url = "http://chart.apis.google.com/chart?chid=$chid";
+        $api_url = $this->chart_api_url."?chid=$chid";
 
         // Open chart file and extract data
         $file_handle = fopen($chart_file, "r");
@@ -498,7 +581,7 @@ class Controller_Results extends Controller {
             CURLOPT_POSTFIELDS => http_build_query($chart_params)
         ));
         
-        $image_map_html = "";
+        $image_map_html = '';
         $json = json_decode($response, true);
         $num_results = count($json['chartshape']);
         if($num_results > 0) {
@@ -508,7 +591,7 @@ class Controller_Results extends Controller {
                     $coords_str = implode(",", $map_item['coords']);
                     $title = $cluster_sizes[$i]." documents (score: ".$cluster_scores[$i].")";
                     $href = "javascript:startLyteframe('".$title."', '".Url::base()."index.php/results/cluster_summary/$project_id/".$cluster_ids[$i]."')";
-                    $image_map_html .= '<area name="'.$map_item['name'].'" shape="'.$map_item['type'].'" coords="'.$coords_str.'" href="'.$href.'" title="'.$title.'">';
+                    $image_map_html .= '<area name="'.$map_item['name'].'" shape="'.$map_item['type'].'" class="noborder icolorff0000" coords="'.$coords_str.'" href="'.$href.'" title="'.$title.'">';
                     $i++;
                 }
             }
@@ -550,7 +633,7 @@ class Controller_Results extends Controller {
         
         $form_errors = "";
         if($_POST) {
-            $post = new Validate($_POST);
+            $post = Validate::factory($_POST);
             $field_data = $post->as_array(); // For form re-population
             
             // TO DO: Form validation

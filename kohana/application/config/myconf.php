@@ -17,7 +17,8 @@ return array(
         'docs' => '/home/adrian/Documents/GSoC_2010/src/ProjectAware/lemur/docs',
         'indexes' => '/home/adrian/Documents/GSoC_2010/src/ProjectAware/lemur/indexes',
         'params' => '/home/adrian/Documents/GSoC_2010/src/ProjectAware/lemur/params',
-        'bin' => '/home/adrian/Documents/GSoC_2010/src/lemur/bin'
+        'bin' => '/home/adrian/Documents/GSoC_2010/src/lemur/bin',
+        'stopwords_list' => '/home/adrian/Documents/GSoC_2010/src/ProjectAware/lemur/stopwords.list'
     )
 );
 

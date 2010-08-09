@@ -5,13 +5,11 @@ class Controller_Gather extends Controller {
     public function before($project_id = 0)
     {
         parent::before();
-        
         $this->model_gather = new Model_Gather;
-        $this->model_params = new Model_Params;
         
         // Config settings (get these from Kohana config file...?)
-        $this->connection_retries = 6;
-        $this->wait_before_retry = 5; // in seconds
+        $this->connection_retries = 4;
+        $this->wait_before_retry = 200; // in seconds
         $this->cron_file = Kohana::config('myconf.path.base')."/project_aware.cron";
     }
     
@@ -41,29 +39,14 @@ class Controller_Gather extends Controller {
         }
     }
     
-    /* DEBUG: 
-    public function action_crontab()
-    {   
-        /*$system("crontab -r", $return_code);
-        if($return_code != 0) {
-            echo "Error when running command &lt;crontab -r&gt;: $return_code<br>";
-        } 
-        system("crontab ".$this->cron_file, $return_code);
-        if($return_code != 0) {
-            echo "Error when running command &lt;crontab ".$this->cron_file."&gt;: $return_code<br>";
-        } 
-        echo "Result from running command &lt;crontab -l&gt;:<br>";
-        echo system("crontab -l");
-    } */
-    
     private function get_project_data($project_id = 0)
     {
-        $project_data = $this->model_params->get_project_data($project_id);
+        $project_data = $this->model_gather->get_project_data($project_id);
         if(count($project_data) > 0) {
             $this->project_data = array_pop($project_data);
             $this->project_id = $this->project_data['project_id'];
             
-            $this->keywords_phrases = $this->model_params->get_active_keywords($this->project_id); // Returns multidimensional array of data for each keyword/phrase
+            $this->keywords_phrases = $this->model_gather->get_active_keywords($this->project_id); // Returns multidimensional array of data for each keyword/phrase
         } else {
             $this->project_data = '';
         } 
@@ -113,15 +96,6 @@ class Controller_Gather extends Controller {
             $request_url = $api_url.'?q='.$keyword_str.$lang.$results_per_page.'&page='.$cur_page;
             print "Query: $request_url\n";
             
-            /* Alternative to Search API => TWITTER Streaming API
-            $request_url = "http://paradoxic7:zircon#107@stream.twitter.com/1/statuses/sample.json";
-            $response = Remote::get($request_url, array(
-                CURLOPT_POST => TRUE,
-                [NOTE: Dont need this for Twitter] CURLOPT_POSTFIELDS => http_build_query(array(
-                    'field' => 'value',
-                )),
-            ));*/
-            
             $response = $this->api_connect($request_url);
             // Stop trying to gather if there was a connection failure
             if($this->api_connect_error) { break; }
@@ -132,9 +106,8 @@ class Controller_Gather extends Controller {
             if($num_results > 0) {
                 
                 foreach($json['results'] as $tweet_data) {
-                    //DEBUG:
-                    //print_r($tweet_data);
-                    if(array_key_exists('from_user', $tweet_data) && array_key_exists('id', $tweet_data)) {
+                    
+                    if(array_key_exists('from_user', $tweet_data) AND array_key_exists('id', $tweet_data)) {
                         $username = $tweet_data['from_user'];
                         $tweet_id = $tweet_data['id'];
                         $tweet_url = "http://twitter.com/$username/status/$tweet_id";
@@ -158,9 +131,6 @@ class Controller_Gather extends Controller {
                     // FIX: Geolocation format screws up DB insert SQL
                     $geolocation = ""; //$geolocation = htmlspecialchars($tweet_data['geo']);
                     
-                    //DEBUG:
-                    //echo "<p>$username; $date_published (".date('D, d M Y H:i:s O', $date_published_timestamp).") $tweet_id; $place; $geolocation;<br>$tweet_text;</p>";
-                    
                     $total_results_gathered += $this->add_metadata($tweet_url, $tweet_text, array(
                         'project_id' => $this->project_id,
                         'api_id' => $api_id,
@@ -180,7 +150,7 @@ class Controller_Gather extends Controller {
             }
         }
         
-        // Add entry to gather log 
+        // Add entry to gather log (as long as no errors occurred)
         if(!$this->api_connect_error) {
             $this->model_gather->insert_gather_log(array(
                 'project_id' => $project_id,
@@ -253,42 +223,40 @@ class Controller_Gather extends Controller {
             //DEBUG:
             print "exists: $url\n";
             
-            // TO DO: Check if this page/URL was updated...if so: add new metadata entry
+            // TO DO: Check if this page/URL was updated -> if so: add new metadata entry
             
         } else {
             $keyword_metadata_entries = $this->generate_keyword_metadata($cache_text);
+            
+            $new_entry_added = 1;
+            //DEBUG:
+            print "added: $url\n";
+            
+            // Add new URL & metadata entry 
+            $url_id = $this->model_gather->insert_url(array(
+                'project_id' => $this->project_id, 
+                'url' => $url
+            ));
+            $metadata['url_id'] = $url_id;
+            $meta_id = $this->model_gather->insert_metadata($metadata);
+            
+            // Add metadata for each keyword found in $cache_text
             if(count($keyword_metadata_entries) > 0) {
-                $new_entry_added = 1;
-                //DEBUG:
-                print "added: $url\n";
-                
-                // Add new URL & metadata entry 
-                $url_id = $this->model_gather->insert_url(array(
-                    'project_id' => $this->project_id, 
-                    'url' => $url
-                ));
-                $metadata['url_id'] = $url_id;
-                $meta_id = $this->model_gather->insert_metadata($metadata);
-                
-                // Add metadata for each keyword found in $cache_text
                 foreach($keyword_metadata_entries as $keyword_metadata_entry) {
                     $keyword_metadata_entry['meta_id'] = $meta_id;
                     $this->model_gather->insert_keyword_metadata($keyword_metadata_entry);
                 }
-                
-                $this->model_gather->insert_cached_text(array(
-                    'meta_id' => $meta_id,
-                    'text' => $cache_text
-                ));
-                $this->model_gather->save_cached_text(array(
-                    'project_id' => $this->project_id,
-                    'meta_id' => $meta_id,
-                    'text' => $cache_text
-                ));
-            } else { 
-                //DEBUG:
-                print "no keywords: $url\n";
             }
+            
+            $this->model_gather->insert_cached_text(array(
+                'meta_id' => $meta_id,
+                'text' => $cache_text
+            ));
+            $this->model_gather->save_cached_text(array(
+                'project_id' => $this->project_id,
+                'meta_id' => $meta_id,
+                'text' => $cache_text
+            ));
         }
         return $new_entry_added;
     }
@@ -296,32 +264,34 @@ class Controller_Gather extends Controller {
     // Counts total number of occurances of each [active] keyword in given $text and adds an keyword entry to array for each where count > 0
     private function generate_keyword_metadata($text) 
     {
-        $this->keyword_metadata = array();
+        $keyword_metadata = array();
         foreach($this->keywords_phrases as $keyword_phrase) {
             $num_occurances = 0;
             if($keyword_phrase['exact_phrase']) {
                 // Phrase set as exact: find total number of occurances
                 $num_occurances = preg_match_all("/\b(".$keyword_phrase['keyword_phrase'].")\b/ie", $text, $matches);
             } else {
-                // Phrase NOT set as exact: make sure post contains ALL words in phrase & sum total occurances of each word in phrase 
+                // Phrase NOT set as exact: make sure post contains ALL words in phrase -> if it does then set $num_occurances to 1 (for simplicity) otherwise set to 0
                 $keywords_phrases_arr = explode(" ", $keyword_phrase['keyword_phrase']); 
+                $num_occurances = 1;
                 foreach($keywords_phrases_arr as $keyword_phrase_sub) {
                     $num_occurances_sub = preg_match_all("/\b(".$keyword_phrase_sub.")\b/ie", $text, $matches);
-                    if($num_occurances_sub > 0) {
-                        $num_occurances += $num_occurances_sub;
-                    } else { break; }
+                    if(!$num_occurances_sub) {
+                        $num_occurances = 0;
+                        break;
+                    }
                 }
             }
             
             if($num_occurances > 0) {
-                // Add entry for given keyword
-                array_push($this->keyword_metadata, array(
+                // Add entry for given keyword (even if $num_occurances is 0)
+                array_push($keyword_metadata, array(
                     'keyword_id' => $keyword_phrase['keyword_id'],
                     'num_occurrences' => $num_occurances
                 ));
             }
         }
-        return $this->keyword_metadata;
+        return $keyword_metadata;
     }
     
     private function date_to_timestamp($date_str) 
@@ -333,7 +303,7 @@ class Controller_Gather extends Controller {
     public function action_log($project_id = 0)
     {
         // Get project data
-        $project_data = $this->model_params->get_project_data($project_id);
+        $project_data = $this->model_gather->get_project_data($project_id);
         
         // Verify that project exists
         if(count($project_data) == 0) {
@@ -349,7 +319,7 @@ class Controller_Gather extends Controller {
             // Default results display
             $result_params = array(
                 'date_from' => 0, 'date_to' => 0,
-                'num_results' => 'all',
+                'num_results' => 100,
                 'order' => 'desc'
             );
             
@@ -365,10 +335,10 @@ class Controller_Gather extends Controller {
                 if ($post->check()) {
                     
                     // Process results display parameters
-                    if($field_data['datef_m'] > 0 && $field_data['datef_y'] > 0 && $field_data['datef_y'] > 0)
+                    if($field_data['datef_m'] > 0 AND $field_data['datef_y'] > 0 AND $field_data['datef_y'] > 0)
                         $result_params['date_from'] = mktime(0, 0, 0, $field_data['datef_m'], $field_data['datef_d'], $field_data['datef_y']);
                     
-                    if($field_data['datet_m'] > 0 && $field_data['datet_y'] > 0 && $field_data['datet_y'] > 0)
+                    if($field_data['datet_m'] > 0 AND $field_data['datet_y'] > 0 AND $field_data['datet_y'] > 0)
                         $result_params['date_to'] = mktime(0, 0, 0, $field_data['datet_m'], $field_data['datet_d'], $field_data['datet_y']);
                     
                     $result_params['num_results'] = $field_data['num_results'];
@@ -382,9 +352,8 @@ class Controller_Gather extends Controller {
                 $field_data = array(
                     'datef_m' => '', 'datef_d' => '', 'datef_y' => '', 
                     'datet_m' => '', 'datet_d' => '', 'datet_y' => '',
-                    'num_results' => 'all',
-                    'order' => 'desc',
-                    'display' => 'individual entries'
+                    'num_results' => $result_params['num_results'],
+                    'order' => $result_params['order']
                 );
             } 
             $results = $this->model_gather->get_gather_log($project_id, $result_params);

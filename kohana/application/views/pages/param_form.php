@@ -44,7 +44,11 @@
         
         $('#params_form').submit(function() {
             $("#keywords_phrases *").attr("selected","selected"); // Select all keywords on form submit
-            $("#submit_btn").attr('value', 'Loading...'); 
+            if($('#gather_now').is(':checked')) {
+                $("#submit_btn").attr('value', 'Loading...this may take a while'); 
+            } else {
+                $("#submit_btn").attr('value', 'Loading...'); 
+            }
             $("#submit_btn").attr('disabled', 'disabled'); // Disable submit button
             <? if($mode == "Modify") { ?>
             $("#deactivated_keywords_phrases *").attr("selected","selected");
@@ -93,9 +97,11 @@
     <input type="button" id="deactivate_keyword_btn" name="deactivate_keyword_btn" value="&#8722;">
     <br>
     <select id="keywords_phrases" name="keywords_phrases[]" multiple="multiple">
-        <? foreach($field_data['keywords_phrases'] as $keyword_phrase) {
-            $quotes = ($keyword_phrase['exact_phrase']) ? '"' : '';
-            echo '<option value="'.$keyword_phrase['keyword_id'].'">'.$quotes.$keyword_phrase['keyword_phrase'].$quotes.'</option>';
+        <? if(array_key_exists('keywords_phrases', $field_data)) { 
+            foreach($field_data['keywords_phrases'] as $keyword_phrase_id) {
+                $quotes = ($field_data['keyword_phrase_data'][$keyword_phrase_id]['exact_phrase']) ? '"' : '';
+                echo '<option value="'.$keyword_phrase_id.'">'.$quotes.$field_data['keyword_phrase_data'][$keyword_phrase_id]['keyword_phrase'].$quotes.'</option>';
+            }
         } ?>
     </select>
     
@@ -104,17 +110,16 @@
     <input type="button" id="reactivate_keyword_btn" name="reactivate_keyword_btn" value="Reactivate">
     <br>
     <select id="deactivated_keywords_phrases" name="deactivated_keywords_phrases[]" multiple="multiple">
-        <? foreach($field_data['deactivated_keywords_phrases'] as $keyword_phrase) {
-            $quotes = ($keyword_phrase['exact_phrase']) ? '"' : '';
-            echo '<option value="'.$keyword_phrase['keyword_id'].'">'.$quotes.$keyword_phrase['keyword_phrase'].$quotes.'</option>';
+        <? if(array_key_exists('deactivated_keywords_phrases', $field_data)) {  
+            foreach($field_data['deactivated_keywords_phrases'] as $keyword_phrase_id) {
+                $quotes = ($field_data['keyword_phrase_data'][$keyword_phrase_id]['exact_phrase']) ? '"' : '';
+                echo '<option value="'.$keyword_phrase_id.'">'.$quotes.$field_data['keyword_phrase_data'][$keyword_phrase_id]['keyword_phrase'].$quotes.'</option>';
+            }
         } ?>
     </select></p>
 <? } ?>
 </p>
 
-<? if($mode == 'New') { ?>
-<label for="active"><input name="active" id="active" type="checkbox" value="1"<? if($field_data['active']) echo ' checked="true"'; ?>> Immediately activate project</label>
-<? } ?>
-
+<label for="gather_now"><input name="gather_now" id="gather_now" type="checkbox" value="1"<? if(array_key_exists('gather_now', $field_data)) echo ' checked="true"'; ?>> <?= ($mode == 'New') ? 'Immediately activate project and start gathering data<i><br>NOTE: data is automatically gathered everyday at midnight</i>' : 'Start gathering data immediately' ?></label><br> 
 <input type="submit" id="submit_btn" name="submit_btn" value="<?= ($mode == "New") ? "Submit" : "Modify" ?>">
 </form>

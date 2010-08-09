@@ -2,12 +2,22 @@
 
 class Model_Gather extends Model {
     
+    public function get_project_data($project_id)
+    {
+        return DB::select()->from('projects')->where('project_id','=',$project_id)->limit(1)->execute()->as_array();
+    }
+    
     public function get_active_projects($gather_interval)
     {
         return DB::select('project_id')->from('projects')
                                        ->where('gather_interval','=',$gather_interval)
                                        ->where('active','=',1)
                                        ->execute()->as_array();
+    }
+    
+    public function get_active_keywords($project_id)
+    {
+        return DB::select()->from('keywords_phrases')->where('project_id','=',$project_id)->where('active','=',1)->execute()->as_array();
     }
     
     public function insert_url($data)
@@ -18,8 +28,7 @@ class Model_Gather extends Model {
     
     public function url_exists($project_id, $url)
     {
-        // Check if the url already exists in the database for this project
-        return DB::query(Database::SELECT, "SELECT COUNT(url) AS `total` FROM `metadata_urls` WHERE (`project_id` = $project_id AND `url` = '$url')")->execute()->get('total');
+        return DB::select(DB::expr('COUNT(url) AS total'))->from('metadata_urls')->where('project_id','=',$project_id)->where('url','=',$url)->execute()->get('total');
     }
     
     public function insert_metadata($data)
@@ -36,18 +45,26 @@ class Model_Gather extends Model {
     public function insert_cached_text($data)
     {
         DB::insert('cached_text', array_keys($data))->values(array_values($data))->execute();
-    } 
+    }
     
     public function save_cached_text($data)
     {
-        $this->doc_dir = Kohana::config('myconf.lemur.docs').'/'.$data['project_id'];
-        // TODO: delete this because it will be created when project is first created
-        if(!is_dir($this->doc_dir))
-            mkdir($this->doc_dir);
-        
-        $this->new_doc = $this->doc_dir.'/'.$data['meta_id'].'.txt';
-        $this->fh = fopen($this->new_doc, 'w') or die($this->new_doc.': cannot open file for writing'); fwrite($this->fh, "<DOC>\n<DOCNO>".$data['meta_id']."</DOCNO>\n<TEXT>\n".$data['text']."\n</TEXT>\n</DOC>");
-        fclose($this->fh);
+        $doc_dir = Kohana::config('myconf.lemur.docs').'/'.$data['project_id'];
+        if(is_writable($doc_dir)) {
+            $new_doc = $doc_dir.'/'.$data['meta_id'].'.txt';
+            $fh = fopen($new_doc, 'w') or die($new_doc.': cannot open file for writing'); 
+            fwrite($fh, "<DOC>\n<DOCNO>".$data['meta_id']."</DOCNO>\n<TEXT>\n".$data['text']."\n</TEXT>\n</DOC>");
+            fclose($fh);
+        } else {
+            $this->insert_gather_log(array(
+                'project_id' => $data['project_id'],
+                'search_query' => "Error saving file to $doc_dir: directory is not writable.",
+                'date' => time(),
+                'results_gathered' => 0,
+                'error' => 1
+            ));
+            exit; // Stop trying to gather more results
+        }
     }
 
     public function insert_gather_log($data)

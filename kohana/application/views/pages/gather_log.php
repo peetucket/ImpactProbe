@@ -9,14 +9,14 @@
 <b>BROWSE</b>
 &nbsp;&nbsp;
 <b>From:</b>
-<input name="datef_m" type="text" id="datef_m" value="<?= $field_data['datef_m'] ?>" size="1" maxlength="2">
-/ <input name="datef_d" type="text" id="datef_d" value="<?= $field_data['datef_d'] ?>" size="1" maxlength="2">
-/ <input name="datef_y" type="text" id="datef_y" value="<?= $field_data['datef_y'] ?>" size="1" maxlength="2">
+<input class="date_field" name="datef_m" type="text" id="datef_m" value="<?= $field_data['datef_m'] ?>" maxlength="2">
+/ <input class="date_field" name="datef_d" type="text" id="datef_d" value="<?= $field_data['datef_d'] ?>" maxlength="2">
+/ <input class="date_field" name="datef_y" type="text" id="datef_y" value="<?= $field_data['datef_y'] ?>" maxlength="2">
 &nbsp;
 <b>To:</b>
-<input name="datet_m" type="text" id="datet_m" value="<?= $field_data['datet_m'] ?>" size="1" maxlength="2">
-/ <input name="datet_d" type="text" id="datet_d" value="<?= $field_data['datet_d'] ?>" size="1" maxlength="2">
-/ <input name="datet_y" type="text" id="datet_y" value="<?= $field_data['datet_y'] ?>" size="1" maxlength="2">
+<input class="date_field" name="datet_m" type="text" id="datet_m" value="<?= $field_data['datet_m'] ?>" maxlength="2">
+/ <input class="date_field" name="datet_d" type="text" id="datet_d" value="<?= $field_data['datet_d'] ?>" maxlength="2">
+/ <input class="date_field" name="datet_y" type="text" id="datet_y" value="<?= $field_data['datet_y'] ?>" maxlength="2">
 &nbsp;&nbsp;
 <b>Order:</b>
 <select name="order">

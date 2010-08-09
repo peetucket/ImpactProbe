@@ -23,33 +23,37 @@ class Controller_Params extends Controller {
         $this->errors = "";
         if($_POST) {
             // Form validation
-            $post = new Validate($_POST); // array_merge($_POST, $_FILES)
-            $post->filter(TRUE, 'trim');  // (NOT WORKING!!!) Apply trim() to all input values 
-            $post->rule('project_title', 'not_empty')
-                 ->rule('project_title', 'max_length', array(120));
-                 //->callback('keywords_phrases', array($this, 'keywords_not_empty')); (NOT WORKING!!)
+            $post = Validate::factory($_POST)
+                  ->rule('project_title', 'not_empty')
+                  ->rule('project_title', 'max_length', array(120))
+                  ->rule('keywords_phrases', 'not_empty');
             
             $this->field_data = $post->as_array(); // For form re-population
             
             if ($post->check()) {
                 
-                $this->field_data['active'] = (array_key_exists('active', $this->field_data)) ? 1 : 0;
+                $this->field_data['gather_now'] = (array_key_exists('gather_now', $this->field_data)) ? 1 : 0;
                 
                 $project_id = $this->model_params->insert_project(array(
                     'project_title' => $this->field_data['project_title'],
                     'date_created' => time(),
                     'gather_interval' => 'daily',
-                    'active' => $this->field_data['active']
+                    'gather_now' => $this->field_data['gather_now']
                 ));
                 
                 $this->model_params->insert_keywords($project_id, $this->field_data['keywords_phrases']);
                 
-                // Create directory to store cached text
-                mkdir(Kohana::config('myconf.lemur.docs')."/$project_id");
+                // Create directory to store cached text & make it writable (must be done using system command for permissions work properly)
+                $system_cmd = "mkdir -m 777 ".Kohana::config('myconf.lemur.docs')."/$project_id";
+                system($system_cmd, $return_code);
+                if($return_code != 0) {
+                    echo "Error when running command &lt;$system_cmd&gt;: $return_code<br>";
+                    exit;
+                }
                 
-                if($this->field_data['active'])
+                // Gather initial results
+                if($this->field_data['gather_now'])
                      Request::factory('gather/index/'.$project_id)->execute();
-                     // Request::factory(...)->execute()->response; // pass this obj to view (output)
                 
                 $this->request->redirect(''); // Redirect to "Home" page
                 
@@ -60,7 +64,7 @@ class Controller_Params extends Controller {
             // Populate form w/ empty values
             $this->field_data = array(
                 'project_title' => '',
-                'active' => 1
+                'gather_now' => 1
             );
         } 
         
@@ -85,16 +89,18 @@ class Controller_Params extends Controller {
             
             $this->project_data = array_pop($project_data);
             
+            $this->field_data['keyword_phrase_data'] = $this->model_params->get_keyword_phrase_data($project_id);
+            
             $this->errors = "";
             if($_POST) {
                 // Form validation
-                $post = new Validate($_POST); // array_merge($_POST, $_FILES)
-                $post->filter(TRUE, 'trim');  // (NOT WORKING!!!) Apply trim() to all input values 
-                $post->rule('project_title', 'not_empty')
-                     ->rule('project_title', 'max_length', array(120));
-                    //->callback('keywords_phrases', array($this, 'keywords_not_empty')); (NOT WORKING!!)
+                $post = Validate::factory($_POST)
+                      ->rule('project_title', 'not_empty')
+                      ->rule('project_title', 'max_length', array(120))
+                      ->rule('keywords_phrases', 'not_empty');
                 
-                $this->field_data = $post->as_array(); // For form re-population
+                // For form re-population
+                $this->field_data = array_merge($this->field_data, $post->as_array()); 
                 
                 if ($post->check()) {
                     
@@ -122,6 +128,10 @@ class Controller_Params extends Controller {
                         $this->model_params->insert_keywords($project_id, $new_keywords_phrases); 
                     $this->model_params->update_keywords($updated_keywords_phrases); 
                     
+                    // Gather initial results
+                    if($this->field_data['gather_now'])
+                        Request::factory('gather/index/'.$project_id)->execute();
+                    
                     $this->request->redirect(''); // Redirect to "Home" page
                     
                 } else { 
@@ -129,11 +139,11 @@ class Controller_Params extends Controller {
                 }
             } else {
                 // Populate form w/ values from database
-                $this->field_data = array(
+                $this->field_data = array_merge($this->field_data, array(
                     'project_title' => $this->project_data['project_title'],
                     'keywords_phrases' => $this->model_params->get_active_keywords($project_id),
                     'deactivated_keywords_phrases' => $this->model_params->get_deactivated_keywords($project_id)
-                );
+                ));
             }
             
             $this->field_data['project_id'] = $project_id; 
@@ -143,13 +153,6 @@ class Controller_Params extends Controller {
         }
     }
     
-    // (NOT WORKING!!) Callback function to ensure there was at least one keyword active/entered 
-    public function keywords_not_empty(Validate $array, $field)
-    {
-        if(!array_key_exists('keywords_phrases', $this->field_data))
-            $array->error($field, 'keywords_not_empty', array($array[$field]));
-    }
-
     public function action_delete($project_id)
     {
         $project_data = $this->model_params->get_project_data($project_id);

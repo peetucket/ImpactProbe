@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="<?= Kohana::config('myconf.url.css'); ?>main.css" type="text/css">
 <script src="<?= Kohana::config('myconf.url.js'); ?>jquery.min.js" type="text/javascript"></script>
 <script src="<?= Kohana::config('myconf.url.js'); ?>jquery.selectboxes.min.js" type="text/javascript"></script>
+<script type="text/javascript" src="http://localhost/ProjectAware/mapper/mapper.js"></script>
 
 <script type="text/javascript" language="javascript" src="<?= Kohana::config('myconf.url.js'); ?>lytebox.js"></script>
 <link rel="stylesheet" href="<?= Kohana::config('myconf.url.css'); ?>lytebox.css" type="text/css" media="screen" />

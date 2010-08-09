@@ -2,6 +2,11 @@
 
 class Model_Results extends Model {
     
+    public function get_project_data($project_id)
+    {
+        return DB::select()->from('projects')->where('project_id','=',$project_id)->limit(1)->execute()->as_array();
+    }
+    
     public function get_keywords_phrases($project_id)
     {
         $result = DB::select()->from('keywords_phrases')->where('project_id','=',$project_id)->execute()->as_array();
@@ -25,9 +30,8 @@ class Model_Results extends Model {
             $query->where('metadata.date_published','>=',$params['date_from']);
         if($params['date_to'] > 0) 
             $query->where('metadata.date_published','<=',$params['date_to']);
-        
-        if($params['num_results'] > 0)
-            $query->limit($params['num_results']);
+         
+        $query->limit($params['limit'])->offset($params['offset']);
         
         $query->order_by('metadata.date_published', strtoupper($params['order']))
               ->order_by('keyword_metadata.meta_id'); // Groups `keyword_metadata` rows together for each `metadata` entry
@@ -40,9 +44,16 @@ class Model_Results extends Model {
         return DB::select()->from('keyword_metadata')->where('meta_id','=',$meta_id)->execute()->as_array();
     }
     
-    public function num_metadata_entries($project_id, $start_date, $end_date)
+    public function num_metadata_entries($project_id, $date_from = 0, $date_to = 0)
     {
-        return DB::query(Database::SELECT, "SELECT COUNT(meta_id) AS `total` FROM `metadata` WHERE (`project_id` = $project_id AND `date_published` >= $start_date AND `date_published` < $end_date)")->execute()->get('total');
+        $query = DB::select(DB::expr('COUNT(meta_id) AS total'))->from('metadata')->where('project_id','=',$project_id);
+        
+        if($date_from > 0) 
+            $query->where('date_published','>=',$date_from);
+        if($date_to > 0) 
+            $query->where('date_published','<=',$date_to);
+        
+        return $query->execute()->get('total');
     }
     
     // Get date_published for oldest or most recently published metadata entry from given project
@@ -82,7 +93,8 @@ class Model_Results extends Model {
     {
         return DB::select()->from('doc_clusters')
                            ->where('project_id','=',$project_id)
-                           ->order_by('cluster_id', 'ASC')->execute()->as_array();
+                           ->order_by('meta_id', 'ASC')
+                           ->execute()->as_array();
     }
     
     public function get_cluster_summary($project_id, $cluster_id, $params)
@@ -108,7 +120,7 @@ class Model_Results extends Model {
     }
     
     public function cluster_log_exists($project_id) {
-        return DB::query(Database::SELECT, "SELECT COUNT(project_id) AS `total` FROM `cluster_log` WHERE `project_id` = $project_id")->execute()->get('total');
+        return DB::select(DB::expr('COUNT(project_id) AS total'))->from('cluster_log')->where('project_id','=',$project_id)->execute()->get('total');
     }
 
     public function get_cluster_log($project_id)
