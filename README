@@ -190,7 +190,6 @@ on their website: http://kohanaframework.org/guide/about.install
 NOTE: by default Kohana is configured to be in 'development' mode so if you plan
 to make this application available on a public web server for security reasons
 you should put Kohana in 'production' mode and also observe some security tips:
-- 
 
 
 1.1.5 Setting up the Lemur Toolkit
