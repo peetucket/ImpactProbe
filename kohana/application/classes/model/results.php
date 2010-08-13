@@ -44,7 +44,7 @@ class Model_Results extends Model {
         return DB::select()->from('keyword_metadata')->where('meta_id','=',$meta_id)->execute()->as_array();
     }
     
-    public function num_metadata_entries($project_id, $date_from = 0, $date_to = 0)
+    public function num_metadata_entries($project_id, $date_from = 0, $date_to = 0, $keyword_id = 0)
     {
         $query = DB::select(DB::expr('COUNT(meta_id) AS total'))->from('metadata')->where('project_id','=',$project_id);
         
@@ -52,6 +52,21 @@ class Model_Results extends Model {
             $query->where('date_published','>=',$date_from);
         if($date_to > 0) 
             $query->where('date_published','<=',$date_to);
+        
+        return $query->execute()->get('total');
+    }
+    
+    public function num_metadata_entries_by_keyword($project_id, $keyword_id, $date_from = 0, $date_to = 0)
+    {
+        $query = DB::select(DB::expr('COUNT(metadata.meta_id) AS total'))->from('metadata')
+               ->join('keyword_metadata')->on('keyword_metadata.meta_id','=','metadata.meta_id')
+               ->where('metadata.project_id','=',$project_id)
+               ->where('keyword_metadata.keyword_id','=',$keyword_id);
+        
+        if($date_from > 0) 
+            $query->where('metadata.date_published','>=',$date_from);
+        if($date_to > 0) 
+            $query->where('metadata.date_published','<=',$date_to);
         
         return $query->execute()->get('total');
     }
@@ -70,23 +85,23 @@ class Model_Results extends Model {
         return $result[0]['text'];
     }
     
-    public function delete_clusters($project_id)
-    {
-        DB::delete('doc_clusters')->where('project_id','=',$project_id)->execute();
-    }
-    
     public function insert_clusters(Array $cluster_data, $project_id)
     {
         foreach($cluster_data as $cluster_pt) {
             $cluster_info = explode(" ", $cluster_pt);
-            $cluster_data = array(
+            $cluster_data_db = array(
                 'meta_id' => $cluster_info[0],
                 'cluster_id' => $cluster_info[1],
                 'score' => $cluster_info[2],
                 'project_id' => $project_id
             );
-            DB::insert('doc_clusters', array_keys($cluster_data))->values(array_values($cluster_data))->execute();
+            DB::insert('doc_clusters', array_keys($cluster_data_db))->values(array_values($cluster_data_db))->execute();
         }
+    }
+    
+    public function delete_clusters($project_id)
+    {
+        DB::delete('doc_clusters')->where('project_id','=',$project_id)->execute();
     }
     
     public function get_clusters($project_id, $params = 0)

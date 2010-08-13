@@ -3,8 +3,6 @@
 <head>
 <title>Clusters - <?= Kohana::config('myconf.site_name') ?></title>
 <meta http-equiv="Content-Type" content="text/html; utf-8">
-<meta name="description" content="">
-<meta name="keywords" content="">
 
 <link rel="stylesheet" href="<?= Kohana::config('myconf.url.css'); ?>main.css" type="text/css">
 <style type="text/css">
@@ -20,8 +18,6 @@
 }
 </style>
 </head>
-
-<div>
 
 <div id="cell_container">
 <? $num_clusters = count($cluster_data); 

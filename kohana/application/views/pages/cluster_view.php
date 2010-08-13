@@ -45,7 +45,4 @@
 
 <? if($singleton_clusters > 0) { ?>
 <p>[<a href="javascript:startLyteframe('Singleton clusters (<?= $singleton_clusters ?> total)', '<?= Url::base().'index.php/results/singleton_clusters/'.$project_data['project_id'] ?>')">view singleton clusters (<?= $singleton_clusters ?>)</a>]</p>
-
-<? /* ***OLD lyteframe ***
-<p>[<a href="<?= Url::base().'index.php/results/singleton_clusters/'.$project_data['project_id'] ?>" rel="lyteframe" title="Singleton Clusters (<?= $singleton_clusters ?>)" rev="width: <?= Kohana::config('myconf.lyteframe.width') ?>; height: <?= Kohana::config('myconf.lyteframe.height') ?>; scrolling: yes;">view singleton clusters (<?= $singleton_clusters ?>)</a>]</p> */ ?>
 <? } ?>

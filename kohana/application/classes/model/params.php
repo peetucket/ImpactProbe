@@ -19,7 +19,9 @@ class Model_Params extends Model {
         DB::delete('projects')->where('project_id','=',$project_id)->limit(1)->execute();
         DB::delete('metadata')->where('project_id','=',$project_id)->execute();
         DB::delete('metadata_urls')->where('project_id','=',$project_id)->execute();
-    
+        
+        //DELETE FROM t1, t2 USING t1 INNER JOIN t2 INNER JOIN t3 WHERE t1.id=t2.id AND t2.id=t3.id;
+        
         // Delete lemur files & charts
         //if(
     }

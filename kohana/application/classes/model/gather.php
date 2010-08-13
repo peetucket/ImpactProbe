@@ -15,6 +15,11 @@ class Model_Gather extends Model {
                                        ->execute()->as_array();
     }
     
+    public function get_api_sources()
+    {
+        return DB::select()->from('api_sources')->execute()->as_array();
+    }
+    
     public function get_active_keywords($project_id)
     {
         return DB::select()->from('keywords_phrases')->where('project_id','=',$project_id)->where('active','=',1)->execute()->as_array();

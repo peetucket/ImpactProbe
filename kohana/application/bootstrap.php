@@ -51,7 +51,7 @@ ini_set('unserialize_callback_func', 'spl_autoload_call');
  */
 Kohana::init(array(
 	'base_url'   => '/ProjectAware/kohana',
-	'index_file' => 'index.php',
+	'index_file' => 'index.php'
 ));
 
 /**
