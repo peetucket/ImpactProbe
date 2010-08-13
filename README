@@ -185,7 +185,7 @@ on their website: http://kohanaframework.org/guide/about.install
 (6) To configure the MySQL database module copy the database.php file from 
     ~/modules/database/config into the ~/application/config directory. Open the 
     newly copied file and edit the settings to point to your MySQL database 
-    (this should be very straightforward).
+    (hostname, username, password, and database).
 
 
 1.1.5 Setting up the Lemur Toolkit

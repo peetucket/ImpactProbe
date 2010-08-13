@@ -87,6 +87,7 @@ class Model_Results extends Model {
     
     public function insert_clusters(Array $cluster_data, $project_id)
     {
+        $i = 0;
         foreach($cluster_data as $cluster_pt) {
             $cluster_info = explode(" ", $cluster_pt);
             $cluster_data_db = array(
@@ -95,7 +96,11 @@ class Model_Results extends Model {
                 'score' => $cluster_info[2],
                 'project_id' => $project_id
             );
+            //echo "$i: <br>";
+            //echo DB::insert('doc_clusters', array_keys($cluster_data_db))->values(array_values($cluster_data_db)); exit;
             DB::insert('doc_clusters', array_keys($cluster_data_db))->values(array_values($cluster_data_db))->execute();
+            //if($i > 5500) break;
+            $i++;
         }
     }
     

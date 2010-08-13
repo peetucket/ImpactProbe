@@ -449,7 +449,7 @@ class Controller_Results extends Controller {
             unlink($chart_file);
         
         // Redirect to cluster view
-        $this->request->redirect("results/cluster_view/$project_id/$cluster_order");
+        //$this->request->redirect("results/cluster_view/$project_id/$cluster_order");
     }
 
     // Build Lemur Index from a directory of cached text documents

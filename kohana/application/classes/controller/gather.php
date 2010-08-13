@@ -222,7 +222,7 @@ class Controller_Gather extends Controller {
                 // ...
                 
                 // Add each result to database
-                $total_results_gathered += $this->add_metadata($tweet_url, $tweet_text, array(
+                $total_results_gathered += $this->add_metadata($url, $text, $require_keywords, array(
                     'project_id' => $this->project_id,
                     'api_id' => $api_id,
                     'date_published' => $date_published_timestamp,
@@ -294,7 +294,8 @@ class Controller_Gather extends Controller {
     }
     
     // Adds new or updates existing metadata entry and returns 1 if new metadata was added
-    private function add_metadata($url, $cache_text, Array $metadata)
+    // If $require_keywords = 1 then metadata will not be added unless at least 1 active keyword is found in text
+    private function add_metadata($url, $cache_text, $require_keywords, Array $metadata)
     {
         $new_entry_added = 0; // if value is 0 then $cache_text either didn't contain any keywords or URL entry already existed
         
@@ -303,7 +304,6 @@ class Controller_Gather extends Controller {
         
         // Check if URL has already been entered into database
         if($this->model_gather->url_exists($this->project_id, $url)) {
-            //DEBUG:
             print "exists: $url\n";
             
             // TO DO: Check if this page/URL was updated -> if so: add new metadata entry w/ updated info
@@ -311,35 +311,39 @@ class Controller_Gather extends Controller {
         } else {
             $keyword_metadata_entries = $this->generate_keyword_metadata($cache_text);
             
-            $new_entry_added = 1;
-            //DEBUG:
-            print "added: $url\n";
-            
-            // Add new URL & metadata entry 
-            $url_id = $this->model_gather->insert_url(array(
-                'project_id' => $this->project_id, 
-                'url' => $url
-            ));
-            $metadata['url_id'] = $url_id;
-            $meta_id = $this->model_gather->insert_metadata($metadata);
-            
-            // Add metadata for each keyword found in $cache_text
-            if(count($keyword_metadata_entries) > 0) {
-                foreach($keyword_metadata_entries as $keyword_metadata_entry) {
-                    $keyword_metadata_entry['meta_id'] = $meta_id;
-                    $this->model_gather->insert_keyword_metadata($keyword_metadata_entry);
+            if($require_keywords && count($keyword_metadata_entries) == 0) {
+                // No keywords/phrases found & $require_keywords set to 1
+                print "no keywords/phrases: $url\n";
+            } else {
+                print "added: $url\n";
+                $new_entry_added = 1;
+                
+                // Add new URL & metadata entry 
+                $url_id = $this->model_gather->insert_url(array(
+                    'project_id' => $this->project_id, 
+                    'url' => $url
+                ));
+                $metadata['url_id'] = $url_id;
+                $meta_id = $this->model_gather->insert_metadata($metadata);
+                
+                // Add metadata for each keyword found in $cache_text
+                if(count($keyword_metadata_entries) > 0) {
+                    foreach($keyword_metadata_entries as $keyword_metadata_entry) {
+                        $keyword_metadata_entry['meta_id'] = $meta_id;
+                        $this->model_gather->insert_keyword_metadata($keyword_metadata_entry);
+                    }
                 }
+                
+                $this->model_gather->insert_cached_text(array(
+                    'meta_id' => $meta_id,
+                    'text' => $cache_text
+                ));
+                $this->model_gather->save_cached_text(array(
+                    'project_id' => $this->project_id,
+                    'meta_id' => $meta_id,
+                    'text' => $cache_text
+                ));
             }
-            
-            $this->model_gather->insert_cached_text(array(
-                'meta_id' => $meta_id,
-                'text' => $cache_text
-            ));
-            $this->model_gather->save_cached_text(array(
-                'project_id' => $this->project_id,
-                'meta_id' => $meta_id,
-                'text' => $cache_text
-            ));
         }
         return $new_entry_added;
     }
@@ -367,7 +371,6 @@ class Controller_Gather extends Controller {
             }
             
             if($num_occurances > 0) {
-                // Add entry for given keyword (even if $num_occurances is 0)
                 array_push($keyword_metadata, array(
                     'keyword_id' => $keyword_phrase['keyword_id'],
                     'num_occurrences' => $num_occurances
