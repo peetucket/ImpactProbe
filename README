@@ -147,6 +147,8 @@ this is not essential. Download PHPMyAdmin here: http://www.phpmyadmin.net
 1.1.4 Setting up Kohana (version 3)
 ----------------------------------------
 
+Note that you may need to switch "short_open_tag = On" in your PHP.ini configuration file and restart Apache.  If it is set to "Off", Kohana may not work correctly.
+
 For your convenience we have included the Kohana PHP Framework version 3.0 
 in this software package. It is likely that a newer version of Kohana is 
 available so if you wish to have the most up-to-date version of Kohana you can 
@@ -171,8 +173,7 @@ on their website: http://kohanaframework.org/guide/about.install
     - Set the base_url in the Kohana::init call to reflect the location of the 
       Kohana folder on your server.
 
-(3) Make sure the ~/application/cache and ~/application/logs directories are 
-    writable by the web server (chmod to 777).
+(3) Make sure the ~/application/cache and ~/application/logs directories exist and are writable by the web server (chmod to 777).
 
 (4) Test your installation by opening the URL you set as the base_url in a 
     browser. You should see the installation page. If it reports any errors, you 
