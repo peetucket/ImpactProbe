@@ -147,7 +147,8 @@ this is not essential. Download PHPMyAdmin here: http://www.phpmyadmin.net
 1.1.4 Setting up Kohana (version 3)
 ----------------------------------------
 
-Note that you may need to switch "short_open_tag = On" in your PHP.ini configuration file and restart Apache.  If it is set to "Off", Kohana may not work correctly.
+NOTE: you may need to switch "short_open_tag = On" in your PHP.ini configuration 
+file and restart Apache.  If it is set to "Off", Kohana may not work correctly.
 
 For your convenience we have included the Kohana PHP Framework version 3.0 
 in this software package. It is likely that a newer version of Kohana is 
@@ -173,7 +174,8 @@ on their website: http://kohanaframework.org/guide/about.install
     - Set the base_url in the Kohana::init call to reflect the location of the 
       Kohana folder on your server.
 
-(3) Make sure the ~/application/cache and ~/application/logs directories exist and are writable by the web server (chmod to 777).
+(3) Make sure the ~/application/cache and ~/application/logs directories exist 
+    and are writable by the web server (chmod to 777).
 
 (4) Test your installation by opening the URL you set as the base_url in a 
     browser. You should see the installation page. If it reports any errors, you 
@@ -190,7 +192,8 @@ on their website: http://kohanaframework.org/guide/about.install
 
 NOTE: by default Kohana is configured to be in 'development' mode so if you plan
 to make this application available on a public web server for security reasons
-you should put Kohana in 'production' mode and also observe some security tips:
+you should put Kohana in 'production' mode:
+http://kerkness.ca/wiki/doku.php?id=setting_up_production_environment
 
 
 1.1.5 Setting up the Lemur Toolkit
@@ -334,10 +337,12 @@ version.
 Primary Kohana resources:
 - User Guide: http://kohanaframework.org/guide/about.kohana
 - API User Guide: http://kohanaframework.org/guide/api
-- Unofficial wiki: http://kohanaframework.org/guide/about.kohana
+- Unofficial wiki: http://kerkness.ca/wiki/doku.php
 - Community forum: http://forum.kohanaframework.org
 
 Other useful Kohana resources:
+- Basic Tutorial: http://kohanaframework.org/guide/tutorials.helloworld
+- Conventions/Style: http://kohanaframework.org/guide/about.conventions
 - Resources for learning Kohana: 
   http://forum.kohanaframework.org/comments.php?DiscussionID=4691
 
@@ -388,7 +393,7 @@ Please read the following before working with this code:
 - Using SSH keys with github: 
   http://github.com/guides/how-to-not-have-to-type-your-password-for-every-push
 
-## Managing Remote Repositories
+2.3.1 Managing Remote Repositories
 
 After installing git and signing up for an account, you will need to tell git 
 about the remote repository:
@@ -399,32 +404,36 @@ This adds "kohana" as a remote repository that can be pulled from.
 
     git checkout -b kohana/master
 
-This creates a local branch "kohana/master" of the master branch of the "kohana" repository.
+This creates a local branch "kohana/master" of the master branch of the "kohana" 
+repository.
 
-## Merging Changes from Remote Repositories
+2.3.2 Merging Changes from Remote Repositories
 
-Now that you have a remote repository, you can pull changes into your local repository:
+Now that you have a remote repository, you can pull changes into your local 
+repository:
 
     git checkout kohana/master
 
-This switches to the previously created "kohana/master" branch.
+This switches to the previously created "kohana/master" branch:
 
     git pull kohana master
 
-This pulls all of the changes from the remote into the local "kohana/master" branch.
+This pulls all of the changes from the remote into the local "kohana/master" 
+branch:
 
     git checkout master
 
-This switches back to your local master branch.
+This switches back to your local master branch:
 
     git merge kohana/master
 
-This merges all of the changes in the "kohana/master" branch into your master branch.
+This merges all of the changes in the "kohana/master" branch into your master 
+branch:
 
     git push
 
-This pushes all the merged changes into your local fork. At this point, your fork is now in sync
-with the origin repository!
+This pushes all the merged changes into your local fork. At this point, your 
+fork is now in sync with the origin repository!
 
 
 --------------------------------------------------------------------------------
