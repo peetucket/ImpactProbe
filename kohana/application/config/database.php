@@ -19,7 +19,7 @@ return array
 			 */
 			'hostname'   => 'localhost',
 			'username'   => 'root',
-			'password'   => 'zircon#107',
+			'password'   => '',
 			'persistent' => FALSE,
 			'database'   => 'project_aware',
 		),
