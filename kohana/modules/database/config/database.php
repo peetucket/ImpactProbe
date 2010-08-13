@@ -18,10 +18,10 @@ return array
 			 * Ports and sockets may be appended to the hostname.
 			 */
 			'hostname'   => 'localhost',
-			'username'   => 'root',
-			'password'   => 'zircon#107',
+			'username'   => FALSE,
+			'password'   => FALSE,
 			'persistent' => FALSE,
-			'database'   => 'project_aware',
+			'database'   => 'kohana',
 		),
 		'table_prefix' => '',
 		'charset'      => 'utf8',
