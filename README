@@ -31,7 +31,7 @@ Contents
     2.1 General information for developers
     2.2 Application structure
     2.3 Uploading changes to git
-    2.4 Data sources
+    2.4 Data source APIs
 
 ================================================================================
 1. Installation guide
@@ -150,7 +150,7 @@ this is not essential. Download PHPMyAdmin here: http://www.phpmyadmin.net
 NOTE: you may need to switch "short_open_tag = On" in your PHP.ini configuration 
 file and restart Apache.  If it is set to "Off", Kohana may not work correctly.
 
-For your convenience we have included the Kohana PHP Framework version 3.0 
+For your convenience we have included the Kohana PHP Framework version 3.0.7
 in this software package. It is likely that a newer version of Kohana is 
 available so if you wish to have the most up-to-date version of Kohana you can 
 download it from their website: http://kohanaframework.org. If you choose to do 
@@ -205,7 +205,8 @@ http://kerkness.ca/wiki/doku.php?id=setting_up_production_environment
 1.1.5 Configuring cron
 ----------------------------------------
 
-To configure the software to collect data at an interval you wish to specify.
+To configure the software to collect data at specified intervals you need to 
+configure cron
 ...
 
 
@@ -341,7 +342,9 @@ Primary Kohana resources:
 - Community forum: http://forum.kohanaframework.org
 
 Other useful Kohana resources:
-- Basic Tutorial: http://kohanaframework.org/guide/tutorials.helloworld
+- Very basic Tutorial: http://kohanaframework.org/guide/tutorials.helloworld
+- Thorough & comprehensive tutorial: 
+  http://www.dealtaker.com/blog/2009/11/20/kohana-php-3-0-ko3-tutorial-part-1
 - Conventions/Style: http://kohanaframework.org/guide/about.conventions
 - Resources for learning Kohana: 
   http://forum.kohanaframework.org/comments.php?DiscussionID=4691
@@ -358,13 +361,13 @@ existing guides are for Kohana version 2.
 --------------------------------------------------------------------------------
 
 Important files & directories (~/ is the root directory of the application):
-~/application/classes/controller
-~/application/classes/classes
-~/application/config
-~/application/messages
-~/application/views/template.php
-~/application/views/pages
-~/modules - potentially useful Kohana modules (enable these by modifying
+~/application/classes/controller - Main code for application
+~/application/classes/model - Generally used to communicate with database
+~/application/config - URL/path and database configuration settings
+~/application/messages - Error messages
+~/application/views/template.php - Page header & footer
+~/application/views/pages - Page content
+~/modules - Potentially useful Kohana modules (enable these by modifying
             ~/application/bootstrap.php)
 ~/data - Lemur Toolkit and Google Chart data is stored here (subfolders named as 
          the project_id contain data for each Monitoring Project) 
@@ -437,13 +440,13 @@ fork is now in sync with the origin repository!
 
 
 --------------------------------------------------------------------------------
-2.4 Data sources 
+2.4 Data sources APIs
 --------------------------------------------------------------------------------
 
-Data sources are the APIs or places on the Internet from which the application 
-collects data (for example the Twitter Search API).
+Data sources APIs are the places from which the application collects data (for 
+example the Twitter Search API).
 
-2.2.1 Currently implemented data sources
+2.2.1 Currently implemented data source APIs
 ----------------------------------------
 
 Currently methods have been implemented (in the 'gather' controller) to collect
@@ -453,14 +456,14 @@ data from the following sources:
 - RSS Feeds
   More information: http://www.rssboard.org
 
-2.2.2 Adding additional data sources
+2.2.2 Adding additional data source APIs
 ----------------------------------------
 
-Suggested additional data sources to implement:
+Suggested additional data source APIs to implement:
 - Facebook
 ... links
 
-Coding style/methodology guidelines for adding additional data sources:
+Coding style/methodology guidelines for adding additional data source APIs:
 ...link to coding template (or comment it out in source code)
 
 

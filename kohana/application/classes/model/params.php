@@ -15,15 +15,14 @@ class Model_Params extends Model {
     
     public function delete_project($project_id)
     {
-        //DB::delete('doc_clusters')->where('project_id','=',$project_id)->execute(); 
         DB::delete('projects')->where('project_id','=',$project_id)->limit(1)->execute();
         DB::delete('metadata')->where('project_id','=',$project_id)->execute();
         DB::delete('metadata_urls')->where('project_id','=',$project_id)->execute();
+        DB::delete('doc_clusters')->where('project_id','=',$project_id)->execute();
+        DB::delete('active_api_sources')->where('project_id','=',$project_id)->execute();
         
-        //DELETE FROM t1, t2 USING t1 INNER JOIN t2 INNER JOIN t3 WHERE t1.id=t2.id AND t2.id=t3.id;
-        
-        // Delete lemur files & charts
-        //if(
+        // DELETE FROM t1, t2 USING t1 INNER JOIN t2 INNER JOIN t3 WHERE t1.id=t2.id AND t2.id=t3.id;
+        // Delete data files: lemur files + charts
     }
     
     public function get_project_data($project_id)
@@ -43,6 +42,78 @@ class Model_Params extends Model {
     public function deactivate_project($project_id)
     {
         DB::update('projects')->value('active', 0)->where('project_id','=',$project_id)->limit(1)->execute();
+    }
+    
+    public function get_api_sources()
+    {
+        return DB::select()->from('api_sources')->execute()->as_array();
+    }
+
+    public function get_active_api_sources($project_id)
+    {
+        return DB::select('api_sources.*')->from('active_api_sources')
+                           ->join('api_sources')->on('active_api_sources.api_id','=','api_sources.api_id')
+                           ->where('project_id','=',$project_id)->execute()->as_array();
+    }
+    public function insert_active_api_source($api_id, $project_id)
+    {
+        DB::insert('active_api_sources', array('api_id', 'project_id'))->values(array($api_id, $project_id))->execute();
+    }
+    // Deletes all non-RSS feed 
+    public function delete_active_api_sources($project_id)
+    {
+        DB::delete('active_api_sources')->where('project_id','=',$project_id)->execute();
+    }
+    
+    public function insert_rss_feeds($project_id, Array $rss_feeds)
+    {
+        foreach($rss_feeds as $rss_feed_url) {
+            $rss_feed_url = trim($rss_feed_url);
+            // Check if RSS is searchable or not
+            if(substr($rss_feed_url, 0, 11) == "Searchable:") {
+                $searchable = 1;
+                $rss_feed_url = str_replace("Searchable: ", "", $rss_feed_url); // Remove Search
+            } else {
+                $searchable = 0;
+            } 
+            DB::insert('rss_feeds', array('project_id', 'date_added', 'url', 'searchable', 'active' ))->values(array($project_id, time(), $rss_feed_url, $searchable, 1))->execute();
+        }
+    }
+    
+    public function get_rss_feed_data($project_id)
+    {
+        $rss_feed_db = DB::select()->from('rss_feeds')->where('project_id','=',$project_id)->execute()->as_array(); 
+        $rss_feed_data = array();
+        foreach($rss_feed_db as $rss_feed) {
+            $rss_feed_data[$rss_feed['feed_id']] = array(
+                'searchable' => $rss_feed['searchable'],
+                'url' => $rss_feed['url']
+            );
+        }
+        return $rss_feed_data;
+    }
+    
+    public function update_rss_feeds(Array $rss_feeds)
+    {
+        foreach ($rss_feeds as $feed_id => $active)
+            DB::update('rss_feeds')->set(array('active' => $active))->where('feed_id','=',$feed_id)->execute();
+    }
+    
+    public function get_active_rss_feeds($project_id)
+    {
+        return $this->create_feed_id_array(DB::select('feed_id')->from('rss_feeds')->where('project_id','=',$project_id)->where('active','=',1)->execute()->as_array());
+    }
+    public function get_deactivated_rss_feeds($project_id)
+    {
+        return $this->create_feed_id_array(DB::select('feed_id')->from('rss_feeds')->where('project_id','=',$project_id)->where('active','=',0)->execute()->as_array());
+    }
+    private function create_feed_id_array(Array $rss_feed_rows)
+    {
+        $feed_ids = array();
+        foreach($rss_feed_rows as $rss_feed) {
+            array_push($feed_ids, $rss_feed['feed_id']);
+        }
+        return $feed_ids;
     }
     
     public function insert_keywords($project_id, Array $keywords_phrases)

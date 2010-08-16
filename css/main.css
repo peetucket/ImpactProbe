@@ -28,6 +28,10 @@ html, body {
     width:276px;
     height:150px;
 }
+#rss_feeds, #deactivated_rss_feeds {
+    width:327px;
+    height:90px;
+}
 
 .table_header { background:#278205; color:#FFFFFF; }
 

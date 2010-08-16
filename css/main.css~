@@ -17,7 +17,6 @@ html, body {
 }
 .date_field {
     width:25px;
-    height:20px;
     font-size:12px;
 }
 
@@ -28,6 +27,10 @@ html, body {
 #keywords_phrases, #deactivated_keywords_phrases {
     width:276px;
     height:150px;
+}
+#rss_feeds, #deactivated_rss_feeds {
+    width:328px;
+    height:90px;
 }
 
 .table_header { background:#278205; color:#FFFFFF; }

@@ -86,21 +86,24 @@ class Controller_Results extends Controller {
             $keywords_phrases = $this->model_results->get_keywords_phrases($project_data['project_id']);
             
             // Determine date published range
-            $edge_date_to = $this->model_results->metadata_edge_date($project_id, 'most_recent');
-            $edge_date_from = $this->model_results->metadata_edge_date($project_id, 'oldest');
-            if($result_params['date_from'] > 0 AND $result_params['date_from'] > $edge_date_from)
-                $edge_date_from = $result_params['date_from'];
-            if($result_params['date_to'] > 0 AND $result_params['date_to'] < $edge_date_to)
-                $edge_date_to = $result_params['date_to'];
-            $date_published_range = date($this->date_format, $edge_date_from)." - ".date($this->date_format, $edge_date_to);
+            if($total_results > 0) {
+                $edge_date_to = $this->model_results->metadata_edge_date($project_id, 'most_recent');
+                $edge_date_from = $this->model_results->metadata_edge_date($project_id, 'oldest');
+                if($result_params['date_from'] > 0 AND $result_params['date_from'] > $edge_date_from)
+                    $edge_date_from = $result_params['date_from'];
+                if($result_params['date_to'] > 0 AND $result_params['date_to'] < $edge_date_to)
+                    $edge_date_to = $result_params['date_to'];
+                $date_published_range = date($this->date_format, $edge_date_from)." - ".date($this->date_format, $edge_date_to);
+            } else {
+                $date_published_range = "";
+            }
             
             if($download_results) {
                 // Generate result output file
-                if($result_params['download_mode'] == 'summary_csv') {
+                if($field_data['download_mode'] == 'summary_csv') {
                     $download_type = 'text/csv'; $download_ext = 'csv';
                     $download_file = Kohana::config('myconf.path.charts')."/results_$project_id.$download_ext";
                     
-                    // TO DO: write out results in stints of 500!!! and append 'a' output file
                     $result_params['num_results'] = $total_results; // So it outputs ALL results (within given date range)
                     list($results, $keyword_occurrence_totals) = $this->generate_results_array($project_id, $keywords_phrases, $result_params);
                     
@@ -109,12 +112,12 @@ class Controller_Results extends Controller {
                     $download_type = 'text/plain'; $download_ext = 'txt';
                     $download_file = Kohana::config('myconf.path.charts')."/results_$project_id.$download_ext";
                     
-                    // TO DO!!!
-                    // ...
+                    $results = $this->model_results->get_results_raw($project_id, $result_params);
+                    $this->write_results_raw($download_file, $results);
                 }
                 
                 // Begin download
-                $download_filename = $result_params['download_mode']."_".date($this->date_format, $edge_date_from)."_".date($this->date_format, $edge_date_to);
+                $download_filename = $field_data['download_mode']."_".date($this->date_format, $edge_date_from)."_".date($this->date_format, $edge_date_to);
                 $this->request->redirect(Kohana::config('myconf.url.download')."?file=$download_file&type=$download_type&name=$download_filename.$download_ext&delete_file=1");
             } else {
                 // Get array of results to display
@@ -191,7 +194,7 @@ class Controller_Results extends Controller {
         return array($results, $keyword_occurrence_totals);
     }
     
-    // Create csv file of results 
+    // Save csv file of results 
     private function write_results_csv($download_file, $keywords_phrases, $results) {
         $fh_download_file = fopen($download_file, 'w') or die("$download_file: cannot open file for writing");
         fwrite($fh_download_file, "Date published,Date retrieved,URL");
@@ -215,6 +218,18 @@ class Controller_Results extends Controller {
                 fwrite($fh_download_file, ",$num_occurrances_s");
             }
             fwrite($fh_download_file, "\n");
+        } 
+        fclose($fh_download_file);
+    }
+    
+    // Save file with raw text (and some metadata) from results 
+    private function write_results_raw($download_file, $results) {
+        $fh_download_file = fopen($download_file, 'w') or die("$download_file: cannot open file for writing");
+        foreach($results as $result) {
+            //print_r($result);
+            $date_published = ($result['date_published'] > 0) ? date($this->date_format, $result['date_published']) : 'N/A';
+            $date_retrieved = date($this->date_format, $result['date_retrieved']);
+            fwrite($fh_download_file, "Date published: $date_published\nDate retrieved: $date_retrieved\nURL: ".$result['url']."\n".$result['text']."\n\n");
         } 
         fclose($fh_download_file);
     }

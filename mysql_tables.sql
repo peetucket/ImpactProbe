@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: localhost
--- Generation Time: Aug 13, 2010 at 11:38 AM
+-- Generation Time: Aug 16, 2010 at 04:02 AM
 -- Server version: 5.1.37
 -- PHP Version: 5.2.10-2ubuntu6.4
 
@@ -22,19 +22,40 @@ SET SQL_MODE="NO_AUTO_VALUE_ON_ZERO";
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `active_api_sources`
+--
+
+CREATE TABLE IF NOT EXISTS `active_api_sources` (
+  `api_id` smallint(5) NOT NULL,
+  `project_id` int(10) NOT NULL,
+  PRIMARY KEY (`api_id`,`project_id`)
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `api_metadata`
+--
+
+CREATE TABLE IF NOT EXISTS `api_metadata` (
+  `api_id` smallint(5) unsigned NOT NULL,
+  `name` varchar(50) NOT NULL,
+  `value` varchar(500) NOT NULL,
+  PRIMARY KEY (`api_id`,`name`)
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `api_sources`
 --
 
 CREATE TABLE IF NOT EXISTS `api_sources` (
   `api_id` smallint(5) NOT NULL AUTO_INCREMENT,
   `api_name` varchar(60) NOT NULL,
-  `source_url` varchar(140) NOT NULL,
   `gather_method_name` varchar(40) NOT NULL,
   PRIMARY KEY (`api_id`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=latin1;
-
-INSERT INTO `api_sources` (`api_id`, `api_name`, `source_url`, `gather_method_name`) VALUES
-(1, 'Twitter Search', 'http://search.twitter.com/search.json', 'twitter_search');
 
 -- --------------------------------------------------------
 
@@ -105,7 +126,6 @@ CREATE TABLE IF NOT EXISTS `keywords_phrases` (
   `keyword_phrase` varchar(250) NOT NULL,
   `active` tinyint(1) unsigned NOT NULL DEFAULT '1',
   `exact_phrase` tinyint(1) unsigned NOT NULL DEFAULT '1',
-  `rank` tinyint(2) unsigned NOT NULL DEFAULT '0',
   `date_added` int(10) NOT NULL,
   PRIMARY KEY (`keyword_id`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=latin1;
@@ -168,4 +188,28 @@ CREATE TABLE IF NOT EXISTS `projects` (
   `gather_interval` varchar(25) NOT NULL DEFAULT 'daily',
   `active` tinyint(1) unsigned NOT NULL DEFAULT '1',
   PRIMARY KEY (`project_id`)
+) ENGINE=MyISAM  DEFAULT CHARSET=latin1;
+
+--
+-- Dumping data for table `api_sources`
+--
+
+INSERT INTO `api_sources` (`api_id`, `api_name`, `gather_method_name`) VALUES
+(1, 'Twitter Search', 'twitter_search'),
+(2, 'RSS Feed', 'rss_feed');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `rss_feeds`
+--
+
+CREATE TABLE IF NOT EXISTS `rss_feeds` (
+  `feed_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `project_id` int(10) unsigned NOT NULL,
+  `date_added` int(10) unsigned NOT NULL,
+  `url` varchar(600) NOT NULL,
+  `searchable` tinyint(1) unsigned NOT NULL DEFAULT '0',
+  `active` tinyint(1) NOT NULL,
+  PRIMARY KEY (`feed_id`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=latin1;

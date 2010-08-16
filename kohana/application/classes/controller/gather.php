@@ -6,6 +6,7 @@ class Controller_Gather extends Controller {
     {
         parent::before();
         $this->model_gather = new Model_Gather;
+        $this->model_params = new Model_Params;
         
         // API connection config settings
         $this->connection_retries = 4;
@@ -17,15 +18,15 @@ class Controller_Gather extends Controller {
         if($gather_from == "") {
             print "Gather interval or project ID not defined, cannot continue.\n";
         } else {
-            // TO DO: modify get_api_sources() to allow user to specify which API sources to gather from (rather than automatically gathering from all of them)
-            $api_sources = $this->model_gather->get_api_sources();
-            
             if($gather_from > 0) {
                 // Gather data for specific project
                 $this->get_project_data($gather_from);
                 if(!$this->project_data) {
                     print "Project with this ID does not exist\n";
                 } else {
+                    // Get active API sources for this project
+                    $api_sources = $this->model_params->get_active_api_sources($gather_from);
+                    
                     // Execute each gathering method listed in db table `api_sources`
                     foreach($api_sources as $api_source) {
                         eval('$this->'.$api_source['gather_method_name'].'('.$gather_from.');');
@@ -37,8 +38,11 @@ class Controller_Gather extends Controller {
                 if(count($active_projects) > 0) {
                     foreach($active_projects as $project) {
                         $this->get_project_data($project['project_id']);
+                        // Get active API sources for this project
+                        $api_sources = $this->model_params->get_active_api_sources($project['project_id']);
                         // Execute each gathering method listed in db table `api_sources`
                         foreach($api_sources as $api_source) {
+                            print('$this->'.$api_source['gather_method_name'].'('.$project['project_id'].');'."\n");
                             eval('$this->'.$api_source['gather_method_name'].'('.$project['project_id'].');');
                         }
                     }
@@ -60,10 +64,13 @@ class Controller_Gather extends Controller {
         } 
     }
     
+    /* 
+     * BEGIN DATA SOURCE API GATHERING METHODS 
+     */
     private function twitter_search($project_id = 0)
     {
         // Twitter Search API parameters:
-        $api_id = 1; // api_id = 1 for Twitter Search API  
+        $api_id = 1; // api_id = 1 for Twitter Search API
         $api_url = "http://search.twitter.com/search.json";
         $results_per_page = "&rpp=100"; // Max is 100
         $lang = ""; //"&lang=en"; // Limit search to English tweets
@@ -104,7 +111,7 @@ class Controller_Gather extends Controller {
             $request_url = $api_url.'?q='.$keyword_str.$lang.$results_per_page.'&page='.$cur_page;
             print "Query: $request_url\n";
             
-            $response = $this->api_connect($request_url);
+            $response = $this->api_connect_get($request_url);
             // Stop trying to gather if there was a connection failure
             if($this->api_connect_error) { break; }
             
@@ -120,7 +127,7 @@ class Controller_Gather extends Controller {
                         $tweet_id = $tweet_data['id'];
                         $tweet_url = "http://twitter.com/$username/status/$tweet_id";
                     } else { 
-                        print "No tweet ID and/or user ID found. Cannot use.\n";
+                        print "ERROR: No tweet ID and/or user ID found. Cannot use.\n";
                         continue; 
                     }
                     if(array_key_exists('created_at', $tweet_data)) {
@@ -137,7 +144,8 @@ class Controller_Gather extends Controller {
                         }
                     }
                     
-                    $total_results_gathered += $this->add_metadata($tweet_url, $tweet_text, array(
+                    $require_keywords = 0;
+                    $total_results_gathered += $this->add_metadata($tweet_url, $tweet_text, $require_keywords, array(
                         'project_id' => $this->project_id,
                         'api_id' => $api_id,
                         'date_published' => $date_published_timestamp,
@@ -166,18 +174,135 @@ class Controller_Gather extends Controller {
         }
     }
     
+    //private function rss_feed($project_id = 0)
+    private function rss_feed($project_id = 0)
+    {
+        // RSS Feed parameters:
+        $api_id = 2; // api_id = 2 for RSS Feeds
+        
+        // Perform gathering for each active RSS feed URL for given project_id
+        $rss_feeds = $this->model_gather->get_active_rss_feeds($project_id);
+        foreach($rss_feeds as $rss_feed) {
+            $total_results_gathered = 0;
+            
+            // If RSS feed is searchable Generate search query for 
+            $keyword_str = "";
+            if($rss_feed['searchable']) {
+                $num_keywords = count($this->keywords_phrases);
+                $i = 0;
+                foreach($this->keywords_phrases as $keyword_phrase) {
+                    $i++;
+                    $word_split = explode(" ", $keyword_phrase['keyword_phrase']);
+                    if(count($word_split) > 1) { // Is phrase (more than 1 word)
+                        // Check if searching "exact phrase" -> if so add quotes
+                        if($keyword_phrase['exact_phrase'])
+                            $keyword_str .= '"'.urlencode($keyword_phrase['keyword_phrase']).'"';
+                        else
+                            $keyword_str .= '('.urlencode($keyword_phrase['keyword_phrase']).')';
+                    } 
+                    else { // Is single keyword
+                        $keyword_str .= urlencode($keyword_phrase['keyword_phrase']);
+                    }
+                    if($i < $num_keywords) {
+                        $keyword_str .= '+OR+';
+                    }
+                }
+            }
+            
+            $connection_retries = 0;
+            $connection_error = 0;
+            while(TRUE) {
+                // Compile request URL
+                $request_url = $rss_feed['url'].$keyword_str; // Example of GET query string (you will likely have to modify the syntax for your API)
+                print "Query: $request_url\n";
+                
+                $rss_output = Feed::parse($request_url);
+                
+                // If no results there might have been a connection failure -> retry connection
+                $num_results = count($rss_output);
+                if($num_results > 0) {
+                    
+                    // Loop through each result, parse, and store data
+                    foreach($rss_output as $item) {
+                        
+                        $title = (array_key_exists('title', $item)) ? $item['title'] : '';
+                        $text = (array_key_exists('description', $item)) ? $item['description'] : '';
+                        $date_published_timestamp = (array_key_exists('pubDate', $item)) ? strtotime($item['pubDate']) : 0;
+                        
+                        // Append title to text & strip all HTML tags except <br>'s
+                        $text = "Title: $title<br>$text";
+                        $text = strip_tags($text, "<br>");
+                        
+                        // Determine unique identifier, if no URL -> use guid -> if no GUID give error
+                        if(array_key_exists('link', $item) && $item['link'] != "") {
+                            $url = $item['link'];
+                        } else if(array_key_exists('guid', $item)) {
+                            $url = $item['guid'];
+                        } else { 
+                            print "Error: item has no URL or GUID, cannot add to database";
+                            continue;
+                        }
+                        
+                        // Add each result to database
+                        $require_keywords = ($rss_feed['searchable']) ? 0 : 1; // Only require keywords if RSS feed is NOT searchable
+                        $total_results_gathered += $this->add_metadata($url, $text, $require_keywords, array(
+                            'project_id' => $this->project_id,
+                            'api_id' => $api_id,
+                            'date_published' => $date_published_timestamp,
+                            'date_retrieved' => time()
+                        ));
+                        
+                    }
+                    break; 
+                    
+                } else {
+                    // Retry connection
+                    $connection_retries++;
+                    
+                    // Connection error (only for non-searchable RSS feeds, it is assumed an error has occured if no item comes through the feed after multiple connection attempts)
+                    if($connection_retries > $this->connection_retries) {
+                        if(!$rss_feed['searchable']) {
+                            $this->model_gather->insert_gather_log(array(
+                                'project_id' => $this->project_id,
+                                'search_query' => $request_url,
+                                'date' => time(),
+                                'results_gathered' => 0,
+                                'error' => 1
+                            ));
+                            $connection_error = 1;
+                        }
+                        break;
+                    }
+                }
+            }
+            
+            // Add entry to gather log (as long as no errors occurred)
+            if(!$connection_error) {
+                $this->model_gather->insert_gather_log(array(
+                    'project_id' => $project_id,
+                    'search_query' => $request_url,
+                    'date' => time(),
+                    'results_gathered' => $total_results_gathered
+                ));
+            }
+        }
+    }
+    
    /***********************************
     ** NEW GATHERING METHOD TEMPLATE **
+    ***********************************
+    Copy the method below and modify it as necessary (please leave a copy of the template). Rename the method to have the same name given in the column `gather_method_name` from the `api_sources` database table. 
     ***********************************
     private function method_name($project_id = 0)
     {
         // API parameters:
-        $api_id = 1; // This value is listed in the database table `api_source` (if you haven't yet created a row for this gathering method do so now) 
+        $api_id = ; // This value is listed in the database table `api_source` (if you haven't yet created a row for this gathering method do so now) 
         $api_url = "";
         
         $total_results_gathered = 0;
         
         // Generate query GET string from keywords defined by the user
+        // If your API takes a post query you will have to send your keyword data as an array of key/value pairs and pass it to the api_connect_post() method below 
         // You will like have to modify this section significantly according to the syntax of the API
         $keyword_str = "";
         $num_keywords = count($this->keywords_phrases);
@@ -207,29 +332,33 @@ class Controller_Gather extends Controller {
             $request_url = "$api_url?q=$keyword_str"; // Example of GET query string (you will almost certainly have to modify the syntax for your API 
             print "Query: $request_url\n";
             
-            // The api_connect() method sends a request as a GET string but if an API uses POST data 
-            // ... 
-            $response = $this->api_connect($request_url);
+            // Use only one of these methods: use the api_connect_get() method to send the request as a GET string; if your API takes a POST request use the api_connect_post() method
+            $response = $this->api_connect_get($request_url);
+            $post_data = array(..); // Key/value array of POST data to be sent as a POST request
+            $response = $this->api_connect_post($request_url, $post_data);
             
             // Stop trying to gather if there was a connection failure
             if($this->api_connect_error) { break; }
             
             // Determine number of results or somehow detect when there are no more results to gather
-            // ***NOTICE: this is very important because if you do not break the loop after determining there are no more results to gather the script will go into an infinite loop
+            // ***NOTICE: It is very important that break the `while(TRUE)` loop after determining there are no more results to gather or else the script will go into an infinite loop
             if($num_results > 0) {
                 
                 // Loop through each result, parse, and store data
-                // ...
+                // BEGIN LOOP
                 
-                // Add each result to database
-                $total_results_gathered += $this->add_metadata($url, $text, $require_keywords, array(
-                    'project_id' => $this->project_id,
-                    'api_id' => $api_id,
-                    'date_published' => $date_published_timestamp,
-                    'date_retrieved' => time(),
-                    'lang' => $lang,
-                    'geolocation' => $geolocation
-                ));
+                    // Add each result to database
+                    $require_keywords = ; // Set this to 1 to make it so metadata is not added to the database unless at least 1 active keyword is found in the given text (set it to 0 to add given metadata to database regardless)
+                    $total_results_gathered += $this->add_metadata($url, $text, $require_keywords, array(
+                        'project_id' => $this->project_id,
+                        'api_id' => $api_id,
+                        'date_published' => $date_published_timestamp,
+                        'date_retrieved' => time(),
+                        'lang' => $lang,
+                        'geolocation' => $geolocation
+                    ));
+                
+                // END LOOP
                 
             } else {
                 // No results on this page so we are DONE!
@@ -251,8 +380,12 @@ class Controller_Gather extends Controller {
     ** END NEW GATHERING METHOD TEMPLATE **
     ***************************************/
     
+    /* 
+     * END DATA SOURCE API GATHERING METHODS 
+     */
+    
     // Returns response or errors after connecting to API via GET string
-    public function api_connect($request_url)
+    public function api_connect_get($request_url)
     {
         $num_requests_sent = 0;
         while(TRUE) {
@@ -293,8 +426,8 @@ class Controller_Gather extends Controller {
         return $response;
     }
     
-    // Adds new or updates existing metadata entry and returns 1 if new metadata was added
-    // If $require_keywords = 1 then metadata will not be added unless at least 1 active keyword is found in text
+    // Adds new metadata entry and returns 1 if new metadata was added and 0 if nothing was added
+    // If $require_keywords = 1 then metadata will not be added unless at least 1 active keyword is found in the given text (if $require_keywords = 0 then given metadata will be added to database regardless)
     private function add_metadata($url, $cache_text, $require_keywords, Array $metadata)
     {
         $new_entry_added = 0; // if value is 0 then $cache_text either didn't contain any keywords or URL entry already existed
@@ -302,12 +435,9 @@ class Controller_Gather extends Controller {
         // Find total number of words in $cached_text and add to metadata
         $metadata['total_words'] = count(explode(" ", $cache_text));
         
-        // Check if URL has already been entered into database
+        // Check if URL already exists in database for this project
         if($this->model_gather->url_exists($this->project_id, $url)) {
             print "exists: $url\n";
-            
-            // TO DO: Check if this page/URL was updated -> if so: add new metadata entry w/ updated info
-            
         } else {
             $keyword_metadata_entries = $this->generate_keyword_metadata($cache_text);
             

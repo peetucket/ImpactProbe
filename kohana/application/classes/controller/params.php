@@ -20,15 +20,19 @@ class Controller_Params extends Controller {
         $view->page_content = View::factory('pages/param_form');
         $view->page_content->mode = "New";
         
+        $api_sources = $this->model_params->get_api_sources();
+        
         $this->errors = "";
         if($_POST) {
             // Form validation
-            $post = Validate::factory($_POST)
-                  ->rule('project_title', 'not_empty')
-                  ->rule('project_title', 'max_length', array(120))
-                  ->rule('keywords_phrases', 'not_empty');
-            
+            $post = Validate::factory($_POST);
             $this->field_data = $post->as_array(); // For form re-population
+            $post->rule('project_title', 'not_empty')
+                 ->rule('project_title', 'max_length', array(120))
+                 ->rule('keywords_phrases', 'not_empty');
+            // If RSS feed is checked -> make sure at least 1 feed URL has been entered 
+            if(array_key_exists('api_rss_feed', $this->field_data))
+                $post->rule('rss_feeds', 'not_empty');
             
             if ($post->check()) {
                 
@@ -37,11 +41,20 @@ class Controller_Params extends Controller {
                 $project_id = $this->model_params->insert_project(array(
                     'project_title' => $this->field_data['project_title'],
                     'date_created' => time(),
-                    'gather_interval' => 'daily',
-                    'gather_now' => $this->field_data['gather_now']
+                    'gather_interval' => $this->field_data['gather_interval'],
+                    'active' => $this->field_data['gather_now']
                 ));
                 
                 $this->model_params->insert_keywords($project_id, $this->field_data['keywords_phrases']);
+                
+                // Enable selected API data sources for this project
+                foreach($api_sources as $api_source) {
+                    if(array_key_exists('api_'.$api_source['gather_method_name'], $this->field_data))
+                        $this->model_params->insert_active_api_source($api_source['api_id'], $project_id);
+                }
+                
+                if(array_key_exists('rss_feed', $this->field_data))
+                    $this->model_params->insert_rss_feeds($project_id, $this->field_data['rss_feeds']);
                 
                 // Create directory to store cached text & make it writable (must be done using system command for permissions work properly)
                 $system_cmd = "mkdir -m 777 ".Kohana::config('myconf.lemur.docs')."/$project_id";
@@ -64,12 +77,18 @@ class Controller_Params extends Controller {
             // Populate form w/ empty values
             $this->field_data = array(
                 'project_title' => '',
+                'gather_interval' => 'daily',
                 'gather_now' => 1
             );
+            // Set all APIs active (except RSS Feeds)
+            foreach($api_sources as $api_source)
+                 $this->field_data['api_'.$api_source['gather_method_name']] = 1; 
+            unset($this->field_data['api_rss_feed']); // Disable RSS Feed by default
         } 
         
         $view->page_content->errors = $this->errors;
         $view->page_content->field_data = $this->field_data;
+        $view->page_content->api_sources = $api_sources;
         $this->request->response = $view;
     }
     
@@ -89,47 +108,74 @@ class Controller_Params extends Controller {
             
             $this->project_data = array_pop($project_data);
             
+            $api_sources = $this->model_params->get_api_sources();
             $this->field_data['keyword_phrase_data'] = $this->model_params->get_keyword_phrase_data($project_id);
+            $this->field_data['rss_feed_data'] = $this->model_params->get_rss_feed_data($project_id);
             
             $this->errors = "";
             if($_POST) {
                 // Form validation
-                $post = Validate::factory($_POST)
-                      ->rule('project_title', 'not_empty')
-                      ->rule('project_title', 'max_length', array(120))
-                      ->rule('keywords_phrases', 'not_empty');
-                
-                // For form re-population
-                $this->field_data = array_merge($this->field_data, $post->as_array()); 
+                $post = Validate::factory($_POST);
+                $this->field_data = array_merge($this->field_data, $post->as_array()); // For form re-population
+                $post->rule('project_title', 'not_empty')
+                     ->rule('project_title', 'max_length', array(120))
+                     ->rule('keywords_phrases', 'not_empty');
+                // If RSS feed is checked -> make sure at least 1 feed URL has been entered 
+                if(array_key_exists('api_rss_feed', $this->field_data))
+                    $post->rule('rss_feeds', 'not_empty');
                 
                 if ($post->check()) {
                     
                     $this->model_params->update_project($project_id, array(
-                        'project_title' => $this->field_data['project_title']
+                        'project_title' => $this->field_data['project_title'],
+                        'gather_interval' => $this->field_data['gather_interval']
                     ));
                     
                     // Add new keywords and activate/deactivate old
-                    $new_keywords_phrases = array();
-                    $updated_keywords_phrases = array(); 
+                    $new_keywords_phrases = array(); $updated_keywords_phrases = array(); 
                     if(array_key_exists('keywords_phrases', $this->field_data)) {
                         foreach($this->field_data['keywords_phrases'] as $keyword_phrase) {
                             if($keyword_phrase > 0)
-                                $updated_keywords_phrases[$keyword_phrase] = 1; // Keyword set as active
+                                $updated_keywords_phrases[$keyword_phrase] = 1; // Keyword/phrase set as active
                             else
-                                array_push($new_keywords_phrases, $keyword_phrase);
+                                array_push($new_keywords_phrases, $keyword_phrase); // New keyword/phrase
                         }
                     }
                     if(array_key_exists('deactivated_keywords_phrases', $this->field_data)) {
                         foreach($this->field_data['deactivated_keywords_phrases'] as $keyword_phrase)
                             $updated_keywords_phrases[$keyword_phrase] = 0; // Keyword set as deactivated
                     }
-                    
                     if(count($new_keywords_phrases) > 0)
                         $this->model_params->insert_keywords($project_id, $new_keywords_phrases); 
                     $this->model_params->update_keywords($updated_keywords_phrases); 
                     
+                    // Add new RSS feed URLs and activate/deactivate old
+                    $new_rss_feeds = array(); $updated_rss_feeds = array(); 
+                    if(array_key_exists('rss_feeds', $this->field_data)) {
+                        foreach($this->field_data['rss_feeds'] as $rss_feed) {
+                            if($rss_feed > 0)
+                                $updated_rss_feeds[$rss_feed] = 1; // RSS feed set as active
+                            else
+                                array_push($new_rss_feeds, $rss_feed); // New RSS feed
+                        }
+                    }
+                    if(array_key_exists('deactivated_rss_feeds', $this->field_data)) {
+                        foreach($this->field_data['deactivated_rss_feeds'] as $rss_feed)
+                            $updated_rss_feeds[$rss_feed] = 0; // RSS feed set as deactivated
+                    }
+                    if(count($new_rss_feeds) > 0)
+                        $this->model_params->insert_rss_feeds($project_id, $new_rss_feeds); 
+                    $this->model_params->update_rss_feeds($updated_rss_feeds); 
+                    
+                    // Enable selected API data sources for this project
+                    $this->model_params->delete_active_api_sources($project_id);
+                    foreach($api_sources as $api_source) {
+                        if(array_key_exists('api_'.$api_source['gather_method_name'], $this->field_data))
+                            $this->model_params->insert_active_api_source($api_source['api_id'], $project_id);
+                    }
+                    
                     // Gather initial results
-                    if($this->field_data['gather_now'])
+                    if(array_key_exists('gather_now', $this->field_data))
                         Request::factory('gather/index/'.$project_id)->execute();
                     
                     $this->request->redirect(''); // Redirect to "Home" page
@@ -142,13 +188,20 @@ class Controller_Params extends Controller {
                 $this->field_data = array_merge($this->field_data, array(
                     'project_title' => $this->project_data['project_title'],
                     'keywords_phrases' => $this->model_params->get_active_keywords($project_id),
-                    'deactivated_keywords_phrases' => $this->model_params->get_deactivated_keywords($project_id)
+                    'deactivated_keywords_phrases' => $this->model_params->get_deactivated_keywords($project_id),
+                    'rss_feeds' => $this->model_params->get_active_rss_feeds($project_id),
+                    'deactivated_rss_feeds' => $this->model_params->get_deactivated_rss_feeds($project_id),
+                    'gather_interval' => $this->project_data['gather_interval']
                 ));
+                $active_api_sources = $this->model_params->get_active_api_sources($project_id);
+                foreach($active_api_sources as $api_source)
+                    $this->field_data['api_'.$api_source['gather_method_name']] = 1; 
             }
             
             $this->field_data['project_id'] = $project_id; 
             $view->page_content->errors = $this->errors;
             $view->page_content->field_data = $this->field_data;
+            $view->page_content->api_sources = $api_sources;
             $this->request->response = $view;
         }
     }

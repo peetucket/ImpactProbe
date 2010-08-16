@@ -39,6 +39,23 @@ class Model_Results extends Model {
         return $query->execute()->as_array();
     }
     
+    public function get_results_raw($project_id, $params)
+    {
+        $query = DB::select('metadata.date_published', 'metadata.date_retrieved', 'metadata_urls.url', 'cached_text.text')->from('metadata')
+                     ->join('metadata_urls')->on('metadata.url_id','=','metadata_urls.url_id')
+                     ->join('cached_text')->on('cached_text.meta_id','=','metadata.meta_id')
+                     ->where('metadata.project_id','=',$project_id);
+              
+        if($params['date_from'] > 0) 
+            $query->where('metadata.date_published','>=',$params['date_from']);
+        if($params['date_to'] > 0) 
+            $query->where('metadata.date_published','<=',$params['date_to']);
+        
+        $query->order_by('metadata.date_published', strtoupper($params['order']));
+        
+        return $query->execute();
+    }
+    
     public function get_keyword_metadata($meta_id)
     {
         return DB::select()->from('keyword_metadata')->where('meta_id','=',$meta_id)->execute()->as_array();

@@ -14,10 +14,14 @@ class Model_Gather extends Model {
                                        ->where('active','=',1)
                                        ->execute()->as_array();
     }
-    
-    public function get_api_sources()
+    public function get_active_rss_feeds($project_id)
     {
-        return DB::select()->from('api_sources')->execute()->as_array();
+        return DB::select()->from('rss_feeds')->where('project_id','=',$project_id)->where('active','=',1)->execute()->as_array();
+    }
+    
+    public function insert_rss_feed($data)
+    {
+        DB::insert('rss_feeds', array_keys($data))->values(array_values($data))->execute();
     }
     
     public function get_active_keywords($project_id)

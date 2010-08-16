@@ -10,6 +10,7 @@
 <a href="<?= Url::base() ?>">&laquo; Back</a>
 <h3>Results - <?= $project_data['project_title'] ?></h3>
 
+<? if($total_results > 0) { ?>
 <form name="results_basic" id="results_basic" method="post" action="">
 <? if($errors) { 
     echo '<p class="errors">'; 
@@ -55,57 +56,58 @@
 
 </form>
 
-<? if($total_results > 0) { ?>
-    <p><? if($clustered) { ?>
-    <input type="button" name="cluster_view_btn" id="cluster_view_btn" value="View Clusters" onClick="parent.location='<?= Url::base() ?>index.php/results/cluster_view/<?= $project_data['project_id'] ?>'">
-    <? } else { ?>
-    <input type="button" name="cluster_btn" id="cluster_btn" value="Cluster All">
-    <? } ?>
-    <input type="button" name="trendline_view_btn" id="trendline_view_btn" value="View Trendline" onClick="parent.location='<?= Url::base() ?>index.php/results/trendline/<?= $project_data['project_id'] ?>'"></p>
-    <p><table width="600" border="0" cellspacing="0" cellpadding="5" style="border:1px solid #000;">
-        <tr class="table_header">
-            <td colspan="5" align="center"><b>Summary</b></td>
-        </tr>
-        <tr>
-            <td colspan="3" align="left">
-                Showing <b><?= $field_data['num_results'] ?></b> of <b><?= $total_results ?></b> results<br>
-                <b>Published between:</b> <?= $date_published_range ?>
-            </td>
-            <td colspan="2" align="left">
-                <? $total_keywords = 0;
-                $keyword_breakdown = "";
-                foreach($keywords_phrases as $keyword_id => $keyword_phrase) { 
-                    $keyword_breakdown .= "<b>$keyword_phrase:</b> $keyword_occurrence_totals[$keyword_id]<br>";
-                    $total_keywords += $keyword_occurrence_totals[$keyword_id];
-                } ?>
-                <span style="text-decoration:underline;">Keyword Breakdown (Total: <?= $total_keywords ?>)</span><br>
-                <?= $keyword_breakdown ?>
-            </td>
-        </tr>
-        <? if($field_data['num_results'] > 0) { ?>
-        <tr class="table_header">
-            <td>&nbsp;</td>
-            <td align="center"><span style="color:#FFF;"><b>Date Published</b></span></td>
-            <td align="center"><span style="color:#FFF;"><b>Date Retrieved</b></span></td>
-            <td align="left"><span style="color:#FFF;"><b>Keyword Metadata</b></span></td>
-            <td align="center">&nbsp;</td>
-        </tr>
-        <?  $i = 1;
-            foreach($results as $result) { ?>
-            <tr class="<?= ($i % 2 == 0) ? 'bg_grey' : 'bg_white' ; ?>">
-                <td align="left"><?= $i ?></td>
-                <td align="center"><? if($result['date_published'] > 0) echo date($date_format, $result['date_published']); ?></td>
-                <td align="center"><?= date($date_format, $result['date_retrieved']) ?></td>
-                <td align="left">
-                <? foreach($result['keywords_phrases'] as $keyword_phrase) {
-                    echo $keyword_phrase['keyword'].": ".$keyword_phrase['num_occurrences']."<br>";
-                } ?>
-                </td>
-                <td align="center"><?= '[<a href="'.$result['url'].'" target="_blank">url</a>] [<a href="'.Url::base().'index.php/results/view_document/'.$project_data['project_id'].'/'.$result['meta_id'].'" rel="lyteframe" title="Viewing raw text" rev="width: 500px; height: 400px; scrolling: yes;">text</a>]'
-                ?></td>
-            </tr>
-            <? $i++;
-            } 
-        } ?>
-    </table></p>
+<p><? if($clustered) { ?>
+<input type="button" name="cluster_view_btn" id="cluster_view_btn" value="View Clusters" onClick="parent.location='<?= Url::base() ?>index.php/results/cluster_view/<?= $project_data['project_id'] ?>'">
+<? } else { ?>
+<input type="button" name="cluster_btn" id="cluster_btn" value="Cluster All">
 <? } ?>
+<input type="button" name="trendline_view_btn" id="trendline_view_btn" value="View Trendline" onClick="parent.location='<?= Url::base() ?>index.php/results/trendline/<?= $project_data['project_id'] ?>'"></p>
+<p><table width="600" border="0" cellspacing="0" cellpadding="5" style="border:1px solid #000;">
+    <tr class="table_header">
+        <td colspan="5" align="center"><b>Summary</b></td>
+    </tr>
+    <tr>
+        <td colspan="3" align="left">
+            Showing <b><?= $field_data['num_results'] ?></b> of <b><?= $total_results ?></b> results<br>
+            <b>Published between:</b> <?= $date_published_range ?>
+        </td>
+        <td colspan="2" align="left">
+            <? $total_keywords = 0;
+            $keyword_breakdown = "";
+            foreach($keywords_phrases as $keyword_id => $keyword_phrase) { 
+                $keyword_breakdown .= "<b>$keyword_phrase:</b> $keyword_occurrence_totals[$keyword_id]<br>";
+                $total_keywords += $keyword_occurrence_totals[$keyword_id];
+            } ?>
+            <span style="text-decoration:underline;">Keyword Breakdown (Total: <?= $total_keywords ?>)</span><br>
+            <?= $keyword_breakdown ?>
+        </td>
+    </tr>
+    <? if($field_data['num_results'] > 0) { ?>
+    <tr class="table_header">
+        <td>&nbsp;</td>
+        <td align="center"><span style="color:#FFF;"><b>Date Published</b></span></td>
+        <td align="center"><span style="color:#FFF;"><b>Date Retrieved</b></span></td>
+        <td align="left"><span style="color:#FFF;"><b>Keyword Metadata</b></span></td>
+        <td align="center">&nbsp;</td>
+    </tr>
+    <?  $i = 1;
+        foreach($results as $result) { ?>
+        <tr class="<?= ($i % 2 == 0) ? 'bg_grey' : 'bg_white' ; ?>">
+            <td align="left"><?= $i ?></td>
+            <td align="center"><? if($result['date_published'] > 0) echo date($date_format, $result['date_published']); ?></td>
+            <td align="center"><?= date($date_format, $result['date_retrieved']) ?></td>
+            <td align="left">
+            <? foreach($result['keywords_phrases'] as $keyword_phrase) {
+                echo $keyword_phrase['keyword'].": ".$keyword_phrase['num_occurrences']."<br>";
+            } ?>
+            </td>
+            <td align="center"><?= '[<a href="'.$result['url'].'" target="_blank">url</a>] [<a href="'.Url::base().'index.php/results/view_document/'.$project_data['project_id'].'/'.$result['meta_id'].'" rel="lyteframe" title="Viewing raw text" rev="width: 500px; height: 400px; scrolling: yes;">text</a>]'
+            ?></td>
+        </tr>
+        <? $i++;
+        } 
+    } ?>
+</table></p>
+<? } else {
+    echo "<p>No results to display</p>";
+} ?>
