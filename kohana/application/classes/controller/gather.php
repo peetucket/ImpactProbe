@@ -42,7 +42,6 @@ class Controller_Gather extends Controller {
                         $api_sources = $this->model_params->get_active_api_sources($project['project_id']);
                         // Execute each gathering method listed in db table `api_sources`
                         foreach($api_sources as $api_source) {
-                            print('$this->'.$api_source['gather_method_name'].'('.$project['project_id'].');'."\n");
                             eval('$this->'.$api_source['gather_method_name'].'('.$project['project_id'].');');
                         }
                     }
@@ -384,7 +383,7 @@ class Controller_Gather extends Controller {
      * END DATA SOURCE API GATHERING METHODS 
      */
     
-    // Returns response or errors after connecting to API via GET string
+    // Returns response or errors after connecting to API via GET string ($request_url)
     public function api_connect_get($request_url)
     {
         $num_requests_sent = 0;
@@ -424,6 +423,12 @@ class Controller_Gather extends Controller {
             }
         }
         return $response;
+    }
+    
+    // Returns response or errors after connecting to API via POST request
+    public function api_connect_post($request_url, $post_data)
+    {
+        
     }
     
     // Adds new metadata entry and returns 1 if new metadata was added and 0 if nothing was added

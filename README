@@ -1,4 +1,4 @@
-Last updated: August 12, 2010
+Last updated: August 16, 2010
 
 ProjectAware is an application which can be used to monitor the social impact
 of outreach activities. It gathers data from various sources (i.e. Twitter 
@@ -7,9 +7,9 @@ user. Gathered results are presented to the user and can be clustered according
 to natural language similarily. Results can also be displayed and downloaded as 
 a timeline graph allowing identification of social trends.
 
-In this README you will find instructions for installing the application and 
-also information for developers. See the file LICENSE in this same directory 
-for the terms of redistribution and use. 
+In this README you will find instructions for installing the application as well 
+as information for developers. See the file LICENSE in this same directory for 
+the terms of redistribution and use. 
 
 If you have any questions/comments/requests, please contact us:
 
@@ -396,7 +396,9 @@ Please read the following before working with this code:
 - Using SSH keys with github: 
   http://github.com/guides/how-to-not-have-to-type-your-password-for-every-push
 
+
 2.3.1 Managing Remote Repositories
+----------------------------------------
 
 After installing git and signing up for an account, you will need to tell git 
 about the remote repository:
@@ -410,7 +412,9 @@ This adds "kohana" as a remote repository that can be pulled from.
 This creates a local branch "kohana/master" of the master branch of the "kohana" 
 repository.
 
+
 2.3.2 Merging Changes from Remote Repositories
+----------------------------------------
 
 Now that you have a remote repository, you can pull changes into your local 
 repository:
@@ -435,37 +439,40 @@ branch:
 
     git push
 
-This pushes all the merged changes into your local fork. At this point, your 
-fork is now in sync with the origin repository!
+This pushes all the merged changes into your local fork. Now your fork is now in 
+sync with the origin repository!
 
 
 --------------------------------------------------------------------------------
-2.4 Data sources APIs
+2.4 Data source APIs
 --------------------------------------------------------------------------------
 
 Data sources APIs are the places from which the application collects data (for 
 example the Twitter Search API).
 
+
 2.2.1 Currently implemented data source APIs
 ----------------------------------------
 
-Currently methods have been implemented (in the 'gather' controller) to collect
-data from the following sources:
+Currently methods have been implemented (in 
+/application/classes/controller/gather.php) to collect data from the following 
+sources:
 - Twitter Search API
   Documentation: http://dev.twitter.com/doc/get/search
 - RSS Feeds
   More information: http://www.rssboard.org
 
+
 2.2.2 Adding additional data source APIs
 ----------------------------------------
 
+...Main things to keep in mind (which you must sync up with)
+
+If your API uses a GET or POST query then you should use the method template
+code commented out in application/classes/controllers/gather.php (its called 
+'NEW DATA SOURCE GATHERING METHOD TEMPLATE'  
+
 Suggested additional data source APIs to implement:
-- Facebook
-... links
-
-Coding style/methodology guidelines for adding additional data source APIs:
-...link to coding template (or comment it out in source code)
-
-
-
+- Facebook API: 
+- Blogger API:
 

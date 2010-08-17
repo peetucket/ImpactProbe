@@ -92,6 +92,15 @@ class Controller_Params extends Controller {
         $this->request->response = $view;
     }
     
+    public function action_help_searchable()
+    {
+        $view = View::factory('message');
+        $view->title = "Help - Searchable RSS Feed";
+        $view->content = "<b>Searchable RSS Feed</b><p>Some RSS Feeds allow you to search through them using a GET query string of search keywords. An example is the Google News RSS Feed:<br> http://news.google.com/news?pz=1&cf=all&ned=us&hl=en&output=rss</p><p>The end of the URL must include the search key, which in the case of the Google News RSS feed is <b>&amp;q=</b> so the full RSS Feed URL you would add is:<br>http://news.google.com/news?pz=1&cf=all&ned=us&hl=en&output=rss&q=</p><p>
+        The application will automatically append the keywords/phrases to the RSS Feed URL before collecting data. If none of this makes any sense or you are not sure just keep the &apos;searchable&apos; checkbox unchecked when adding an RSS Feed URL.</p>";
+        $this->request->response = $view;
+    } 
+
     public function action_modify($project_id = 0)
     {
         $project_data = $this->model_params->get_project_data($project_id);

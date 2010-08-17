@@ -197,7 +197,7 @@ echo $rss_feed_chkbox_html; ?>
     <td align="left">
     <b>RSS Feed URLs</b><br>
     <input type="text" name="add_rss_feed_text" id="add_rss_feed_text" value="">
-    <label for="searchable"><input name="searchable" id="searchable" type="checkbox" value="1">searchable (<a href="'.Url::base().'index.php/params/help_searchable" rel="lyteframe" title="Help: Searchable RSS Feeds" rev="width: 400px; height: 170px; scrolling: no;">?</a>)</label>
+    <label for="searchable"><input name="searchable" id="searchable" type="checkbox" value="1">searchable (<a href=" <?= Url::base() ?>index.php/params/help_searchable" rel="lyteframe" title="Help: Searchable RSS Feeds" rev="width: 465px; height: 280px; scrolling: no;">?</a>)</label>
     <input type="button" id="add_rss_feed_btn" name="add_rss_feed_btn" value="&#043;">
 <? if($mode == "New") { ?>
     <input type="button" id="remove_rss_feed_btn" name="remove_rss_feed_btn" value="&#8722;">

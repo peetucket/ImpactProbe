@@ -241,7 +241,7 @@ class Controller_Results extends Controller {
         
         $text = $this->model_results->get_cached_text($meta_id);
         /* 
-        //TO DO: bold each keyword in document  
+        //TO DO: bold each keyword/phrase in document  
         $keywords_phrases = $this->model_results->get_keywords_phrases($project_id);
         foreach($keywords_phrases as $keyword_phrase) {
             $text = preg_replace("/\b($keyword_phrase)\b/ie", "<b>$keyword_phrase</b>", $text); // Doesn't work!
@@ -425,8 +425,7 @@ class Controller_Results extends Controller {
                 $cluster_order = 'cluster_size';
         }
         
-        // TO DO: parameterize clustering
-        //        ex: limit to only docments within a certain time window
+        // TO DO: parameterize clustering; For example, limit to only docments within a certain data range
         
         $this->build_lemur_index($project_id);
         
@@ -446,7 +445,6 @@ class Controller_Results extends Controller {
         }
         
         // Delete old cluster data & add new cluster data to database
-        //set_time_limit(40); // Extend max execution time by 40 secs
         $this->model_results->delete_clusters($project_id);
         $this->model_results->insert_clusters($cluster_data, $project_id);
         
@@ -464,7 +462,7 @@ class Controller_Results extends Controller {
             unlink($chart_file);
         
         // Redirect to cluster view
-        //$this->request->redirect("results/cluster_view/$project_id/$cluster_order");
+        $this->request->redirect("results/cluster_view/$project_id/$cluster_order");
     }
 
     // Build Lemur Index from a directory of cached text documents
@@ -497,11 +495,9 @@ class Controller_Results extends Controller {
         // Generate index params & build index
         $this->index_params = $this->params_dir."/index.params";
         $this->index_dir = Kohana::config('myconf.lemur.indexes')."/$project_id";
-        if(!file_exists($this->index_params)) {
-            $fh_index = fopen($this->index_params, 'w') or die($this->index_params.': cannot open file for writing');
-            fwrite($fh_index, "<parameters>\n\t<index>".$this->index_dir."</index>\n\t<indexType>indri</indexType>\n\t<memory>512000000</memory>\n\t<dataFiles>".$this->docs_list."</dataFiles>\n\t<stopwords>".Kohana::config('myconf.lemur.stopwords_list')."</stopwords>\n\t<docFormat>trec</docFormat>\n\t<stemmer>krovetz</stemmer>\n</parameters>");
-            fclose($fh_index);
-        }
+        $fh_index = fopen($this->index_params, 'w') or die($this->index_params.': cannot open file for writing');
+        fwrite($fh_index, "<parameters>\n\t<index>".$this->index_dir."</index>\n\t<indexType>indri</indexType>\n\t<memory>512000000</memory>\n\t<dataFiles>".$this->docs_list."</dataFiles>\n\t<stopwords>".Kohana::config('myconf.lemur.stopwords_list')."</stopwords>\n\t<docFormat>trec</docFormat>\n\t<stemmer>krovetz</stemmer>\n</parameters>");
+        fclose($fh_index);
         
         // Remove old index directory (containing clusterIndex.cl) otherwise we will get duplicate entries
         if (is_dir($this->index_dir)) {
