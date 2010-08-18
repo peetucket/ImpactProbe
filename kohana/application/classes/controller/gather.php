@@ -102,7 +102,7 @@ class Controller_Gather extends Controller {
         // TO DO: Add negative keywords to query string
         // &q=...+-negkey1+-negkey2+...
         // 
-        
+
         $this->api_connect_error = 0;
         $cur_page = 1;
         while(TRUE) {
@@ -110,7 +110,7 @@ class Controller_Gather extends Controller {
             $request_url = $api_url.'?q='.$keyword_str.$lang.$results_per_page.'&page='.$cur_page;
             print "Query: $request_url\n";
             
-            $response = $this->api_connect_get($request_url);
+            $response = $this->api_connect($request_url, 'get');
             // Stop trying to gather if there was a connection failure
             if($this->api_connect_error) { break; }
             
@@ -233,12 +233,12 @@ class Controller_Gather extends Controller {
                         $text = strip_tags($text, "<br>");
                         
                         // Determine unique identifier, if no URL -> use guid -> if no GUID give error
-                        if(array_key_exists('link', $item) && $item['link'] != "") {
+                        if(array_key_exists('link', $item) AND $item['link'] != "") {
                             $url = $item['link'];
                         } else if(array_key_exists('guid', $item)) {
                             $url = $item['guid'];
                         } else { 
-                            print "Error: item has no URL or GUID, cannot add to database";
+                            print "Error: item has no URL or GUID. Cannot use.\n";
                             continue;
                         }
                         
@@ -300,8 +300,8 @@ class Controller_Gather extends Controller {
         
         $total_results_gathered = 0;
         
-        // Generate query GET string from keywords defined by the user
-        // If your API takes a post query you will have to send your keyword data as an array of key/value pairs and pass it to the api_connect_post() method below 
+        // Generate [GET] query string from keywords defined by the user
+        // If your API takes a POST query you will have to send your keyword data as an array of key/value pairs and pass it to the api_connect() method below 
         // You will like have to modify this section significantly according to the syntax of the API
         $keyword_str = "";
         $num_keywords = count($this->keywords_phrases);
@@ -331,10 +331,9 @@ class Controller_Gather extends Controller {
             $request_url = "$api_url?q=$keyword_str"; // Example of GET query string (you will almost certainly have to modify the syntax for your API 
             print "Query: $request_url\n";
             
-            // Use only one of these methods: use the api_connect_get() method to send the request as a GET string; if your API takes a POST request use the api_connect_post() method
-            $response = $this->api_connect_get($request_url);
-            $post_data = array(..); // Key/value array of POST data to be sent as a POST request
-            $response = $this->api_connect_post($request_url, $post_data);
+            // Use the api_connect() method in one of two ways: if your API takes a GET request pass the URL as the first parameter and 'get' as the second; if your API takes a POST request pass the URL as the first parameter, 'post' as the second, and the key/value array of POST data as the third
+            $response = $this->api_connect($request_url, 'get');
+            $response = $this->api_connect($request_url, 'post', $post_data);
             
             // Stop trying to gather if there was a connection failure
             if($this->api_connect_error) { break; }
@@ -383,10 +382,16 @@ class Controller_Gather extends Controller {
      * END DATA SOURCE API GATHERING METHODS 
      */
     
-    // Returns response or errors after connecting to API via GET string ($request_url)
-    public function api_connect_get($request_url)
+    // Returns response or adds error to gather_log after connecting to API via GET or POST
+    public function api_connect($request_url, $method, Array $post_data = array())
     {
+        $method = strtolower($method);
+        if($method != 'get' AND $method != 'post') {
+            throw new Exception("api_connect: method supplied must be either 'post' or 'get'");
+        }
+        
         $num_requests_sent = 0;
+        $response = "";
         while(TRUE) {
             if($num_requests_sent > $this->connection_retries) {
                 print "Could not connect to API with request: $request_url\n";
@@ -394,7 +399,7 @@ class Controller_Gather extends Controller {
                 // Add ERROR entry to gather log
                 $this->model_gather->insert_gather_log(array(
                     'project_id' => $this->project_id,
-                    'search_query' => $request_url,
+                    'search_query' => $error, // Pass last error message instead of query URL
                     'date' => time(),
                     'results_gathered' => 0,
                     'error' => 1
@@ -406,29 +411,30 @@ class Controller_Gather extends Controller {
                     print "Re-trying ($num_requests_sent)...\n";
                 
                 // Try connecting to API
-                $response = Remote::get($request_url, array(
-                    CURLOPT_RETURNTRANSFER => TRUE
-                ));
-                if(substr($response, 0, 12) == "REMOTE_ERROR") { // Check for custom error from /system/classes/Remote.php
-                    $error_code = preg_replace('/[^0-9]/', '', $response); // Remove all non-numeric chars
-                    print "ERROR: $error_code\n"; 
+                $error = "";
+                try {
+                    if($method == "get") {
+                        $response = Remote::get($request_url, array(
+                            CURLOPT_RETURNTRANSFER => TRUE
+                        ));
+                    } else if($method == "post") {
+                        $response = Remote::get($request_url, array(
+                            CURLOPT_POST       => TRUE,
+                            CURLOPT_POSTFIELDS => http_build_query($post_data)
+                        ));
+                    }
+                } catch (Exception $e) {
+                    $error = $e->getMessage();
                     $num_requests_sent++;
                     sleep($this->wait_before_retry); // Wait before trying to reconnect
-                } elseif(substr($response, 0, 16) == "REMOTE_FORBIDDEN") {
-                    break; // Usually means query page index is out of range & we have reached end of results
-                } else {
+                }
+                if(!$error) {
                     print "Successfully connected to API!\n";
                     break;
                 }
             }
         }
         return $response;
-    }
-    
-    // Returns response or errors after connecting to API via POST request
-    public function api_connect_post($request_url, $post_data)
-    {
-        
     }
     
     // Adds new metadata entry and returns 1 if new metadata was added and 0 if nothing was added
@@ -446,7 +452,7 @@ class Controller_Gather extends Controller {
         } else {
             $keyword_metadata_entries = $this->generate_keyword_metadata($cache_text);
             
-            if($require_keywords && count($keyword_metadata_entries) == 0) {
+            if($require_keywords AND count($keyword_metadata_entries) == 0) {
                 // No keywords/phrases found & $require_keywords set to 1
                 print "no keywords/phrases: $url\n";
             } else {

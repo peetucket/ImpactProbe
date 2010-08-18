@@ -15,10 +15,6 @@ SET SQL_MODE="NO_AUTO_VALUE_ON_ZERO";
 /*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
 /*!40101 SET NAMES utf8 */;
 
---
--- Database: `project_aware`
---
-
 -- --------------------------------------------------------
 
 --
@@ -56,6 +52,14 @@ CREATE TABLE IF NOT EXISTS `api_sources` (
   `gather_method_name` varchar(40) NOT NULL,
   PRIMARY KEY (`api_id`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=latin1;
+
+--
+-- Dumping data for table `api_sources`
+--
+
+INSERT INTO `api_sources` (`api_id`, `api_name`, `gather_method_name`) VALUES
+(1, 'Twitter Search', 'twitter_search'),
+(2, 'RSS Feed', 'rss_feed');
 
 -- --------------------------------------------------------
 
@@ -189,14 +193,6 @@ CREATE TABLE IF NOT EXISTS `projects` (
   `active` tinyint(1) unsigned NOT NULL DEFAULT '1',
   PRIMARY KEY (`project_id`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=latin1;
-
---
--- Dumping data for table `api_sources`
---
-
-INSERT INTO `api_sources` (`api_id`, `api_name`, `gather_method_name`) VALUES
-(1, 'Twitter Search', 'twitter_search'),
-(2, 'RSS Feed', 'rss_feed');
 
 -- --------------------------------------------------------
 

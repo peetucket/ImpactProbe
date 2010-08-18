@@ -30,8 +30,8 @@ Contents
 2. Developer information
     2.1 General information for developers
     2.2 Application structure
-    2.3 Uploading changes to git
-    2.4 Data source APIs
+    2.3 Data source APIs
+    2.4 Uploading changes to git
 
 ================================================================================
 1. Installation guide
@@ -92,8 +92,8 @@ easiest to install them in the following order: MySQL -> Apache -> PHP.
 After installing the required software unzip the application package into the
 your Apache DocumentRoot (the root HTTP directory of the web server). The 
 DocumentRoot path should be listed in your apache configuration file which, if 
-you are using apache2, should be listed in ~/apache2/conf/httpd.conf or, if you
-created a new apache site, in the config file located in this directory:
+you are using apache2, should be listed in /usr/local/apache2/conf/httpd.conf 
+or, if you created a new site, in the config file located in this directory:
 /etc/apache2/sites-enabled
 
 NOTE: Depending on your platform, the installation's subdirs may have lost 
@@ -101,6 +101,8 @@ their permissions due to the zip extraction. Chmod them all to 755 by running
 the following command from within the root directory of your application:
     
     find . -type d -exec chmod 0755 {} \;
+
+In this guide ~/ is the root directory of the application.
 
 The following directories MUST be made writeable:
 ~/application/data/charts
@@ -205,12 +207,27 @@ http://kerkness.ca/wiki/doku.php?id=setting_up_production_environment
 1.1.5 Configuring cron
 ----------------------------------------
 
-To configure the software to collect data at specified intervals you need to 
-configure cron
-...
+To enable the software to collect data at specified intervals you need to 
+configure cron. Open up ~/impact_probe.cron provided with the application and 
+change the directory paths to the Kohana index.php file on each line to point to 
+your index.php file (by default this is in the main directory of the 
+application). In order for cron to work properly you might also have to change 
+the 'php' command to the full path to your php executable (usually this is 
+/usr/local/bin/php). Finally, issue this command to initialize a crontab:
 
+    crontab impact_probe.cron
 
+To display your crontab issue this command:
+    
+    crontab -l
 
+NOTE: You should be aware that any command scheduled to run at a time when the 
+computer is turned off will not be executed. Cron can make up for missed 
+commands if you create bash scripts to execute each of the commands listed in 
+impact_probe.cron and place each script into the appropriate cron directory 
+(/etc/cron.hourly, /etc/cron.weekly, etc). However, if you do this you can only 
+use gathering intervals for which cron folders exist and you have placed a bash 
+script (for example, 'twice daily' will not work but 'daily' will).
 
 
 1.1.6 Configuration settings
@@ -349,8 +366,6 @@ Other useful Kohana resources:
 - Resources for learning Kohana: 
   http://forum.kohanaframework.org/comments.php?DiscussionID=4691
 
-Please add more to this list.
-
 Kohana is a popular framework so there are lots of resources available on the 
 Internet so don't be afraid to search around. But be aware that a lot of the 
 existing guides are for Kohana version 2.
@@ -378,7 +393,41 @@ Important files & directories (~/ is the root directory of the application):
 
 
 --------------------------------------------------------------------------------
-2.3 Uploading changes to git
+2.3 Data source APIs
+--------------------------------------------------------------------------------
+
+Data sources APIs are the places from which the application collects data (for 
+example the Twitter Search API).
+
+
+2.3.1 Currently implemented data source APIs
+----------------------------------------
+
+Currently methods have been implemented (in 
+/application/classes/controller/gather.php) to collect data from the following 
+sources:
+- Twitter Search API
+  Documentation: http://dev.twitter.com/doc/get/search
+- RSS Feeds
+  More information: http://www.rssboard.org
+
+
+2.3.2 Adding additional data source APIs
+----------------------------------------
+
+...Main things to keep in mind (which you must sync up with)
+
+If your API uses a GET or POST query then you should use the method template
+code commented out in application/classes/controllers/gather.php (its called 
+'NEW DATA SOURCE GATHERING METHOD TEMPLATE'  
+
+Suggested additional data source APIs to implement:
+- Facebook API: 
+- Blogger API:
+
+
+--------------------------------------------------------------------------------
+2.4 Uploading changes to git
 --------------------------------------------------------------------------------
 
 The github repository for this application is located here:
@@ -397,7 +446,7 @@ Please read the following before working with this code:
   http://github.com/guides/how-to-not-have-to-type-your-password-for-every-push
 
 
-2.3.1 Managing Remote Repositories
+2.4.1 Managing Remote Repositories
 ----------------------------------------
 
 After installing git and signing up for an account, you will need to tell git 
@@ -413,7 +462,7 @@ This creates a local branch "kohana/master" of the master branch of the "kohana"
 repository.
 
 
-2.3.2 Merging Changes from Remote Repositories
+2.4.2 Merging Changes from Remote Repositories
 ----------------------------------------
 
 Now that you have a remote repository, you can pull changes into your local 
@@ -442,37 +491,4 @@ branch:
 This pushes all the merged changes into your local fork. Now your fork is now in 
 sync with the origin repository!
 
-
---------------------------------------------------------------------------------
-2.4 Data source APIs
---------------------------------------------------------------------------------
-
-Data sources APIs are the places from which the application collects data (for 
-example the Twitter Search API).
-
-
-2.2.1 Currently implemented data source APIs
-----------------------------------------
-
-Currently methods have been implemented (in 
-/application/classes/controller/gather.php) to collect data from the following 
-sources:
-- Twitter Search API
-  Documentation: http://dev.twitter.com/doc/get/search
-- RSS Feeds
-  More information: http://www.rssboard.org
-
-
-2.2.2 Adding additional data source APIs
-----------------------------------------
-
-...Main things to keep in mind (which you must sync up with)
-
-If your API uses a GET or POST query then you should use the method template
-code commented out in application/classes/controllers/gather.php (its called 
-'NEW DATA SOURCE GATHERING METHOD TEMPLATE'  
-
-Suggested additional data source APIs to implement:
-- Facebook API: 
-- Blogger API:
 

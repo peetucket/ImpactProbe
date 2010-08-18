@@ -1,6 +1,6 @@
-0 0 * * * php /your/path/ProjectAware/index.php --uri=gather/index/daily
-0 0,12 * * * php /your/path/ProjectAware/index.php --uri=gather/index/twice_daily
-0 0 * * 0 php /your/path/ProjectAware/index.php --uri=gather/index/weekly
-0 0 * * 0,4 php /your/path/ProjectAware/index.php --uri=gather/index/twice_weekly
-0 * 1 * * php /your/path/ProjectAware/index.php --uri=gather/index/monthly
-0 * 1,15 * * php /your/path/ProjectAware/index.php --uri=gather/index/twice_monthly
+0 0 * * * php /your/path/to/ImpactProbe/index.php --uri=gather/index/daily
+0 0,12 * * * php /your/path/to/ImpactProbe/index.php --uri=gather/index/twice_daily
+0 0 * * 0 php /your/path/to/ImpactProbe/index.php --uri=gather/index/weekly
+0 0 * * 0,4 php /your/path/to/ImpactProbe/index.php --uri=gather/index/twice_weekly
+0 * 1 * * php /your/path/to/ImpactProbe/index.php --uri=gather/index/monthly
+0 * 1,15 * * php /your/path/to/ImpactProbe/index.php --uri=gather/index/twice_monthly
