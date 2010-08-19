@@ -1,6 +1,6 @@
 Last updated: August 16, 2010
 
-ProjectAware is an application which can be used to monitor the social impact
+ImpactProbe is an application which can be used to monitor the social impact
 of outreach activities. It gathers data from various sources (i.e. Twitter 
 Search API) according to specified keyword/phrase parameters defined by the 
 user. Gathered results are presented to the user and can be clustered according 
