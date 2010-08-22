@@ -1,4 +1,4 @@
-Last updated: August 16, 2010
+Last updated: August 22, 2010
 
 ImpactProbe is an application which can be used to monitor the social impact
 of outreach activities. It gathers data from various sources (i.e. Twitter 
@@ -105,12 +105,12 @@ the following command from within the root directory of your application:
 In this guide ~/ is the root directory of the application.
 
 The following directories MUST be made writeable:
-~/application/data/charts
-~/application/data/lemur/docs
-~/application/data/lemur/indexes
-~/application/data/lemur/params
+~/data/charts
+~/data/lemur/docs
+~/data/lemur/indexes
+~/data/lemur/params
 
-Use the following UNIX command to make each of these directories writeable:
+Use the following UNIX command to make each of the above directories writeable:
     
     chmod 0777 <DIRECTORY>
 
@@ -201,7 +201,10 @@ http://kerkness.ca/wiki/doku.php?id=setting_up_production_environment
 1.1.5 Setting up the Lemur Toolkit
 ----------------------------------------
 
-
+Download Lemur here: http://sourceforge.net/projects/lemur/
+Untar the package and follow the instructions provided in the Lemur README file 
+to install the software. Take note of the path where Lemur was installed because 
+you will need it in when establishing configuration settings (section 1.1.6).
 
 
 1.1.5 Configuring cron
@@ -396,8 +399,10 @@ Important files & directories (~/ is the root directory of the application):
 2.3 Data source APIs
 --------------------------------------------------------------------------------
 
-Data sources APIs are the places from which the application collects data (for 
-example the Twitter Search API).
+Data source APIs are the places from which the application collects data (for 
+example the Twitter Search API). Adding additional data source APIs is of utmost 
+importance because the utility of the application depends upon the amount of 
+data it is able to access.
 
 
 2.3.1 Currently implemented data source APIs
@@ -415,17 +420,27 @@ sources:
 2.3.2 Adding additional data source APIs
 ----------------------------------------
 
-Each new API
+There is one method in ~/application/classes/controller/gather.php for each data
+source API (i.e. twitter_search). To allow the application to gather data from 
+an additional source API you must add a new method to gather.php. Use the `NEW 
+GATHERING METHOD TEMPLATE` which has been commented out in gather.php (please 
+leave a copy of the template for other to use). Choose a name for your method 
+name and modify the code as necessary. Please note that this template assumes 
+your API responds to either GET or POST requests. In order to activate your 
+method you must insert a new row into the `api_sources` table in the MySQL 
+database. The row should contain the name of your method you created in 
+gather.php and also a 'friendly' name. Here is an example SQL command:
 
-...Main things to keep in mind (which you must sync up with)
+    INSERT INTO `api_sources` (`api_name`, `gather_method_name`) 
+    VALUES ('Twitter Search', 'twitter_search');
 
-If your API uses a GET or POST query then you should use the method template
-code commented out in application/classes/controllers/gather.php (its called 
-'NEW DATA SOURCE GATHERING METHOD TEMPLATE'  
+Now when adding or modifying a project you should see your API appear under the 
+list with a checkbox next to it.
 
 Suggested additional data source APIs to implement:
-- Facebook API: 
-- Blogger API:
+- Facebook Open Stream API:
+  http://wiki.developers.facebook.com/index.php/Using_the_Open_Stream_API
+- Blogger API: http://code.google.com/apis/blogger
 
 
 --------------------------------------------------------------------------------
