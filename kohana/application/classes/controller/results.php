@@ -256,8 +256,9 @@ class Controller_Results extends Controller {
     }
     
     // TO DO: allow user to view document with keywords_phrases highlighted
-    public function action_view_document($project_id = 0, $meta_id = 0)
+    public function action_view_document($project_id = 0)
     {
+        $meta_id = ($_GET['meta_id'] > 0) ? $_GET['meta_id'] : 0;
         $view = View::factory('pages/view_document');
         
         $text = $this->model_results->get_cached_text($meta_id);
@@ -483,7 +484,7 @@ class Controller_Results extends Controller {
             unlink($chart_file);
         
         // Redirect to cluster view
-        $this->request->redirect("results/cluster_view/$project_id/$cluster_order");
+        $this->request->redirect("results/cluster_view/$project_id?cluster_order=$cluster_order");
     }
 
     // Build Lemur Index from a directory of cached text documents
@@ -539,8 +540,10 @@ class Controller_Results extends Controller {
         }
     }
     
-    public function action_cluster_view($project_id = 0, $cluster_order = 'arbitrarily')
-    { 
+    public function action_cluster_view($project_id = 0)
+    {
+        $cluster_order = (array_key_exists('cluster_order', $_GET)) ? $_GET['cluster_order'] : 'arbitrarily';
+        
         $project_data = $this->model_results->get_project_data($project_id);
         $cluster_log = $this->model_results->get_cluster_log($project_id);
         
@@ -713,7 +716,7 @@ class Controller_Results extends Controller {
                 if($map_item['type'] == "CIRCLE") {
                     $coords_str = implode(",", $map_item['coords']);
                     $title = $cluster_sizes[$i]." documents (score: ".$cluster_scores[$i].")";
-                    $href = "javascript:startLyteframe('".$title."', '".Url::base()."index.php/results/cluster_summary/$project_id/".$cluster_ids[$i]."')";
+                    $href = "javascript:startLyteframe('".$title."', '".Url::base()."index.php/results/cluster_summary/$project_id?cluster_id=".$cluster_ids[$i]."')";
                     $image_map_html .= '<area name="'.$map_item['name'].'" shape="'.$map_item['type'].'" class="noborder icolorff0000" coords="'.$coords_str.'" href="'.$href.'" title="'.$title.'">';
                     $i++;
                 }
@@ -744,8 +747,9 @@ class Controller_Results extends Controller {
         $this->request->response = $view;
     }
     
-    public function action_cluster_summary($project_id, $cluster_id)
+    public function action_cluster_summary($project_id)
     {
+        $cluster_id = ($_GET['cluster_id'] > 0) ? $_GET['cluster_id'] : 0;
         $view = View::factory('pages/cluster_text');
         
         // Default results display

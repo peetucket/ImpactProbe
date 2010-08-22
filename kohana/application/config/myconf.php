@@ -39,6 +39,6 @@ return array(
         'docs' => '~/ImpactProbe/data/lemur/docs',
         'indexes' => '~/ImpactProbe/data/lemur/indexes',
         'params' => '~/ImpactProbe/data/lemur/params',
-        'stopwords_list' => '~/ImpactProbe/data/lemur/stopwords.list'
+        'stopwords_list' => '~/ImpactProbe/data/lemur/stopwords.list' 
     )
 );

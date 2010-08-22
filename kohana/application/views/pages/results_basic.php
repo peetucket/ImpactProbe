@@ -123,7 +123,7 @@ along with ImpactProbe. If not, see <http://www.gnu.org/licenses/>.
                 echo $keyword_phrase['keyword'].": ".$keyword_phrase['num_occurrences']."<br>";
             } ?>
             </td>
-            <td align="center"><?= '[<a href="'.$result['url'].'" target="_blank">url</a>] [<a href="'.Url::base().'index.php/results/view_document/'.$project_data['project_id'].'/'.$result['meta_id'].'" rel="lyteframe" title="Viewing raw text" rev="width: 500px; height: 400px; scrolling: yes;">text</a>]'
+            <td align="center"><?= '[<a href="'.$result['url'].'" target="_blank">url</a>] [<a href="'.Url::base().'index.php/results/view_document/'.$project_data['project_id'].'?meta_id='.$result['meta_id'].'" rel="lyteframe" title="Viewing raw text" rev="width: 500px; height: 400px; scrolling: yes;">text</a>]'
             ?></td>
         </tr>
         <? $i++;
