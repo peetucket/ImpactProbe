@@ -23,7 +23,7 @@ defined('SYSPATH') or die('No direct script access.');
 
 class Controller_Gather extends Controller {
     
-    public function before($project_id = 0)
+    public function before()
     {
         parent::before();
         $this->model_gather = new Model_Gather;
@@ -34,6 +34,7 @@ class Controller_Gather extends Controller {
         $this->wait_before_retry = 200; // in seconds
     }
     
+    // Execute each gathering method listed in db table `api_sources` for appropriate project(s). If $gather_from is a project_id then only execute for that project, otherwise gather data for all projects assigned to the given time interval (ex: 'daily').
     public function action_index($gather_from = "")
     {
         if($gather_from == "") {
@@ -45,10 +46,7 @@ class Controller_Gather extends Controller {
                 if(!$this->project_data) {
                     print "Project with this ID does not exist\n";
                 } else {
-                    // Get active API sources for this project
                     $api_sources = $this->model_params->get_active_api_sources($gather_from);
-                    
-                    // Execute each gathering method listed in db table `api_sources`
                     foreach($api_sources as $api_source) {
                         eval('$this->'.$api_source['gather_method_name'].'('.$gather_from.');');
                     }
@@ -59,9 +57,7 @@ class Controller_Gather extends Controller {
                 if(count($active_projects) > 0) {
                     foreach($active_projects as $project) {
                         $this->get_project_data($project['project_id']);
-                        // Get active API sources for this project
                         $api_sources = $this->model_params->get_active_api_sources($project['project_id']);
-                        // Execute each gathering method listed in db table `api_sources`
                         foreach($api_sources as $api_source) {
                             eval('$this->'.$api_source['gather_method_name'].'('.$project['project_id'].');');
                         }
@@ -87,7 +83,7 @@ class Controller_Gather extends Controller {
     /* 
      * BEGIN DATA SOURCE API GATHERING METHODS 
      */
-    private function twitter_search($project_id = 0)
+    private function twitter_search()
     {
         // Twitter Search API parameters:
         $api_id = 1; // api_id = 1 for Twitter Search API
@@ -186,7 +182,7 @@ class Controller_Gather extends Controller {
         // Add entry to gather log (as long as no errors occurred)
         if(!$this->api_connect_error) {
             $this->model_gather->insert_gather_log(array(
-                'project_id' => $project_id,
+                'project_id' => $this->project_id,
                 'search_query' => $request_url,
                 'date' => time(),
                 'results_gathered' => $total_results_gathered
@@ -194,18 +190,18 @@ class Controller_Gather extends Controller {
         }
     }
     
-    //private function rss_feed($project_id = 0)
-    private function rss_feed($project_id = 0)
+    private function rss_feed()
     {
         // RSS Feed parameters:
         $api_id = 2; // api_id = 2 for RSS Feeds
         
         // Perform gathering for each active RSS feed URL for given project_id
-        $rss_feeds = $this->model_gather->get_active_rss_feeds($project_id);
+        $rss_feeds = $this->model_gather->get_active_rss_feeds($this->project_id);
+        
         foreach($rss_feeds as $rss_feed) {
             $total_results_gathered = 0;
             
-            // If RSS feed is searchable Generate search query for 
+            // If RSS feed was set searchable generate search query GET string
             $keyword_str = "";
             if($rss_feed['searchable']) {
                 $num_keywords = count($this->keywords_phrases);
@@ -230,53 +226,60 @@ class Controller_Gather extends Controller {
             }
             
             $connection_retries = 0;
-            $connection_error = 0;
+            $this->api_connect_error = 0;
             while(TRUE) {
                 // Compile request URL
-                $request_url = $rss_feed['url'].$keyword_str; // Example of GET query string (you will likely have to modify the syntax for your API)
+                $request_url = $rss_feed['url'].$keyword_str;
                 print "Query: $request_url\n";
                 
-                $rss_output = Feed::parse($request_url);
+                // Check for connection errors
+                try {
+                    $status_code = Remote::status($request_url);
+                } catch (Exception $e) {
+                    $this->api_connect_error = "Error connecting to $request_url. Cannot locate host.";
+                } 
+                if(!$this->api_connect_error AND ($status_code < 200 OR $status_code > 299)) {
+                    $this->api_connect_error = "Error connecting to $request_url. Status code: $status_code";
+                }
                 
-                // If no results there might have been a connection failure -> retry connection
-                $num_results = count($rss_output);
-                if($num_results > 0) {
-                    
-                    // Loop through each result, parse, and store data
-                    foreach($rss_output as $item) {
-                        
-                        $title = (array_key_exists('title', $item)) ? $item['title'] : '';
-                        $text = (array_key_exists('description', $item)) ? $item['description'] : '';
-                        $date_published_timestamp = (array_key_exists('pubDate', $item)) ? strtotime($item['pubDate']) : 0;
-                        
-                        // Append title to text & strip all HTML tags except <br>'s
-                        $text = "Title: $title<br>$text";
-                        $text = strip_tags($text, "<br>");
-                        
-                        // Determine unique identifier, if no URL -> use guid -> if no GUID give error
-                        if(array_key_exists('link', $item) AND $item['link'] != "") {
-                            $url = $item['link'];
-                        } else if(array_key_exists('guid', $item)) {
-                            $url = $item['guid'];
-                        } else { 
-                            print "Error: item has no URL or GUID. Cannot use.\n";
-                            continue;
+                if(!$this->api_connect_error) {
+                    $rss_output = Feed::parse($request_url);
+                    $num_results = count($rss_output);
+                    if($num_results > 0) {
+                        // Loop through each result, parse, and store data
+                        foreach($rss_output as $item) {
+                            $title = (array_key_exists('title', $item)) ? $item['title'] : '';
+                            $text = (array_key_exists('description', $item)) ? $item['description'] : '';
+                            $date_published_timestamp = (array_key_exists('pubDate', $item)) ? strtotime($item['pubDate']) : 0;
+                            
+                            // Append title to text & strip all HTML tags except <br>'s
+                            $text = "Title: $title<br>$text";
+                            $text = strip_tags($text, "<br>");
+                            
+                            // Determine unique identifier, if no URL -> use guid -> if no GUID give error
+                            if(array_key_exists('link', $item) AND $item['link'] != "") {
+                                $url = $item['link'];
+                            } else if(array_key_exists('guid', $item)) {
+                                $url = $item['guid'];
+                            } else { 
+                                print "Error: item has no URL or GUID. Cannot use.\n";
+                                continue;
+                            }
+                            
+                            // Add each result to database
+                            $require_keywords = ($rss_feed['searchable']) ? 0 : 1; // Only require keywords if RSS feed is NOT searchable
+                            $total_results_gathered += $this->add_metadata($url, $text, $require_keywords, array(
+                                'project_id' => $this->project_id,
+                                'api_id' => $api_id,
+                                'date_published' => $date_published_timestamp,
+                                'date_retrieved' => time()
+                            ));
                         }
-                        
-                        // Add each result to database
-                        $require_keywords = ($rss_feed['searchable']) ? 0 : 1; // Only require keywords if RSS feed is NOT searchable
-                        $total_results_gathered += $this->add_metadata($url, $text, $require_keywords, array(
-                            'project_id' => $this->project_id,
-                            'api_id' => $api_id,
-                            'date_published' => $date_published_timestamp,
-                            'date_retrieved' => time()
-                        ));
-                        
                     }
                     break; 
                     
                 } else {
-                    // Retry connection
+                    // Retry connecting to API
                     $connection_retries++;
                     
                     // Connection error (only for non-searchable RSS feeds, it is assumed an error has occured if no item comes through the feed after multiple connection attempts)
@@ -284,12 +287,12 @@ class Controller_Gather extends Controller {
                         if(!$rss_feed['searchable']) {
                             $this->model_gather->insert_gather_log(array(
                                 'project_id' => $this->project_id,
-                                'search_query' => $request_url,
+                                'search_query' => $this->api_connect_error,
                                 'date' => time(),
                                 'results_gathered' => 0,
                                 'error' => 1
                             ));
-                            $connection_error = 1;
+                            $this->api_connect_error = 1;
                         }
                         break;
                     }
@@ -297,9 +300,9 @@ class Controller_Gather extends Controller {
             }
             
             // Add entry to gather log (as long as no errors occurred)
-            if(!$connection_error) {
+            if(!$this->api_connect_error) {
                 $this->model_gather->insert_gather_log(array(
-                    'project_id' => $project_id,
+                    'project_id' => $this->project_id,
                     'search_query' => $request_url,
                     'date' => time(),
                     'results_gathered' => $total_results_gathered
@@ -313,7 +316,7 @@ class Controller_Gather extends Controller {
     ***********************************
     Copy the method below and modify it as necessary (please leave a copy of the template). Rename the method to have the same name given in the column `gather_method_name` from the `api_sources` database table. 
     ***********************************
-    private function method_name($project_id = 0)
+    private function method_name()
     {
         // API parameters:
         $api_id = ; // This value is listed in the database table `api_source` (if you haven't yet created a row for this gathering method do so now) 
@@ -388,7 +391,7 @@ class Controller_Gather extends Controller {
         // Add entry to gather log (as long as no errors occurred)
         if(!$this->api_connect_error) {
             $this->model_gather->insert_gather_log(array(
-                'project_id' => $project_id,
+                'project_id' => $this->project_id,
                 'search_query' => $request_url,
                 'date' => time(),
                 'results_gathered' => $total_results_gathered

@@ -404,7 +404,7 @@ example the Twitter Search API).
 ----------------------------------------
 
 Currently methods have been implemented (in 
-/application/classes/controller/gather.php) to collect data from the following 
+~/application/classes/controller/gather.php) to collect data from the following 
 sources:
 - Twitter Search API
   Documentation: http://dev.twitter.com/doc/get/search
@@ -414,6 +414,8 @@ sources:
 
 2.3.2 Adding additional data source APIs
 ----------------------------------------
+
+Each new API
 
 ...Main things to keep in mind (which you must sync up with)
 
