@@ -5,11 +5,11 @@ of outreach activities. It gathers data from various sources (i.e. Twitter
 Search API) according to specified keyword/phrase parameters defined by the 
 user. Gathered results are presented to the user and can be clustered according 
 to natural language similarily. Results can also be displayed and downloaded as 
-a timeline graph allowing identification of social trends.
+a timeline graph (posts/time).
 
 In this README you will find instructions for installing the application as well 
-as information for developers. See the file LICENSE in this same directory for 
-the terms of redistribution and use. 
+as information for developers interested in improving the application. See the 
+LICENSE file in this same directory for the terms of redistribution and use. 
 
 If you have any questions/comments/requests, please contact us:
 
@@ -431,7 +431,7 @@ Suggested additional data source APIs to implement:
 --------------------------------------------------------------------------------
 
 The github repository for this application is located here:
-...
+http://github.com/peetucket/ImpactProbe
 
 Unlike SVN, git does not used a central repository. This is why git is 
 "distributed" and SVN is "centralized". Although this makes git an extremely 
@@ -446,45 +446,45 @@ Please read the following before working with this code:
   http://github.com/guides/how-to-not-have-to-type-your-password-for-every-push
 
 
-2.4.1 Managing Remote Repositories
+2.4.1 Managing remote repositories
 ----------------------------------------
 
 After installing git and signing up for an account, you will need to tell git 
 about the remote repository:
 
-    git remote add kohana git://github.com/kohana/kohana.git
+    git remote add kohana git@github.com:peetucket/ImpactProbe.git
 
 This adds "kohana" as a remote repository that can be pulled from.
 
-    git checkout -b kohana/master
+    git checkout -b ImpactProbe/master
 
-This creates a local branch "kohana/master" of the master branch of the "kohana" 
-repository.
+This creates a local branch "ImpactProbe/master" of the master branch of the 
+"ImpactProbe" repository.
 
 
-2.4.2 Merging Changes from Remote Repositories
+2.4.2 Merging changes from remote repositories
 ----------------------------------------
 
 Now that you have a remote repository, you can pull changes into your local 
 repository:
 
-    git checkout kohana/master
+    git checkout ImpactProbe/master
 
-This switches to the previously created "kohana/master" branch:
+This switches to the previously created "ImpactProbe/master" branch:
 
-    git pull kohana master
+    git pull ImpactProbe master
 
-This pulls all of the changes from the remote into the local "kohana/master" 
-branch:
+This pulls all of the changes from the remote into the local 
+"ImpactProbe/master" branch:
 
     git checkout master
 
 This switches back to your local master branch:
 
-    git merge kohana/master
+    git merge ImpactProbe/master
 
-This merges all of the changes in the "kohana/master" branch into your master 
-branch:
+This merges all of the changes in the "ImpactProbe/master" branch into your 
+master branch:
 
     git push
 
