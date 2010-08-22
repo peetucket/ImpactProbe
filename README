@@ -452,9 +452,9 @@ Please read the following before working with this code:
 After installing git and signing up for an account, you will need to tell git 
 about the remote repository:
 
-    git remote add kohana git@github.com:peetucket/ImpactProbe.git
+    git remote add ImpactProbe git@github.com:peetucket/ImpactProbe.git
 
-This adds "kohana" as a remote repository that can be pulled from.
+This adds "ImpactProbe" as a remote repository that can be pulled from.
 
     git checkout -b ImpactProbe/master
 
