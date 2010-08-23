@@ -66,6 +66,7 @@ easiest to install them in the following order: MySQL -> Apache -> PHP.
   UNIX installation guide for PHP/Apache: 
   http://www.php.net/manual/en/install.unix.php
   Downloads: http://www.php.net/downloads.php
+  NOTE: Be sure to install the cURL extension with PHP.
 
 - MySQL Community Server
   You should install each of the following MySQL Community Server packages:
@@ -116,7 +117,7 @@ Use the following UNIX command to make each of the above directories writeable:
 
 We recommend that you do not modify the default directory structure
 but if you choose to do so you must modify the application's configuration 
-settings described in 'Configuration settings' section (1.1.6) of this README.
+settings described in the 'Configuration settings' section (1.1.6).
 
 
 1.1.3 Importing MySQL tables
@@ -149,7 +150,7 @@ this is not essential. Download PHPMyAdmin here: http://www.phpmyadmin.net
 1.1.4 Setting up Kohana (version 3)
 ----------------------------------------
 
-NOTE: you may need to switch "short_open_tag = On" in your PHP.ini configuration 
+NOTE: You may need to switch "short_open_tag = On" in your PHP.ini configuration 
 file and restart Apache.  If it is set to "Off", Kohana may not work correctly.
 
 For your convenience we have included the Kohana PHP Framework version 3.0.7
@@ -164,33 +165,35 @@ doing this open ~/application/bootstrap.php and make the following changes:
  - Set the base_url in the Kohana::init call to reflect the location of the 
    Kohana folder on your server.
 
-Instructions for setting up Kohana (included in this package) are described 
-below according to those described in official Kohana installation guide found 
-on their website: http://kohanaframework.org/guide/about.install
+Instructions for setting up Kohana 3.0.7 (included in this package) are 
+described below according to those described in official Kohana installation 
+guide found on their website: http://kohanaframework.org/guide/about.install
 
-(1) Upload the contents of this folder somewhere inside your Apache 
-    DocumentRoot (your web server).
-
-(2) Open ~/application/bootstrap.php and make the following changes:
+(1) Open ~/kohana/application/bootstrap.php and make the following changes:
     - Set the default timezone for your application.
     - Set the base_url in the Kohana::init call to reflect the location of the 
-      Kohana folder on your server.
+      kohana folder on your server.
 
-(3) Make sure the ~/application/cache and ~/application/logs directories exist 
-    and are writable by the web server (chmod to 777).
+(2) Make sure the ~/kohana/application/cache and ~/kohana/application/logs 
+    directories exist and are writable by the web server (chmod to 0777).
 
-(4) Test your installation by opening the URL you set as the base_url in a 
+(3) Test your installation by opening the URL you set as the base_url in a 
     browser. You should see the installation page. If it reports any errors, you 
     will need to correct them before continuing.
 
-(5) Once your install page reports that your environment is set up correctly you 
-    need to either rename or delete install.php in the root directory. You should 
-    then see the Kohana welcome page displaying "Hello, world!"
+(4) Once your install page reports that your environment is set up correctly you 
+    need to either rename or delete install.php in the root directory.
 
-(6) To configure the MySQL database module copy the database.php file from 
-    ~/modules/database/config into the ~/application/config directory. Open the 
-    newly copied file and edit the settings to point to your MySQL database 
-    (hostname, username, password, and database).
+(5) To configure the MySQL database module copy the database.php file from 
+    ~/kohana/modules/database/config into the ~/kohana/application/config 
+    directory. Open the newly copied file and edit the settings to point to your 
+    MySQL database (hostname, username, password, and database).
+
+(6) To make the application accessible from the root directory of the 
+    application rather than ~/kohana you must rename ~/index.php.tmp to 
+    index.php and delete ~/kohana/index.php. Then open 
+    ~/kohana/application/bootstrap.php again and set the base_url to the root 
+    directory of the application.
 
 NOTE: by default Kohana is configured to be in 'development' mode so if you plan
 to make this application available on a public web server for security reasons
@@ -202,9 +205,11 @@ http://kerkness.ca/wiki/doku.php?id=setting_up_production_environment
 ----------------------------------------
 
 Download Lemur here: http://sourceforge.net/projects/lemur/
-Untar the package and follow the instructions provided in the Lemur README file 
-to install the software. Take note of the path where Lemur was installed because 
-you will need it in when establishing configuration settings (section 1.1.6).
+Untar the package and follow the instructions provided in the Lemur INSTALL file 
+to install the software. Be sure to include the --enable-cluster option when 
+running the configure script. Take note of the path where Lemur was installed 
+because you will need it in when establishing the application's configuration 
+settings (section 1.1.6).
 
 
 1.1.5 Configuring cron
@@ -213,10 +218,10 @@ you will need it in when establishing configuration settings (section 1.1.6).
 To enable the software to collect data at specified intervals you need to 
 configure cron. Open up ~/impact_probe.cron provided with the application and 
 change the directory paths to the Kohana index.php file on each line to point to 
-your index.php file (by default this is in the main directory of the 
-application). In order for cron to work properly you might also have to change 
-the 'php' command to the full path to your php executable (usually this is 
-/usr/local/bin/php). Finally, issue this command to initialize a crontab:
+your index.php file (this should be in the root directory of the application). 
+In order for cron to work properly you might also have to change the 'php' 
+command to the full path to your php executable (usually this is 
+/usr/local/bin/php). Then issue this command to initialize a crontab:
 
     crontab impact_probe.cron
 
@@ -237,7 +242,7 @@ script (for example, 'twice daily' will not work but 'daily' will).
 ----------------------------------------
 
 Configuration settings for the application are established in this file:
-~/application/config/myconf.php
+~/kohana/application/config/myconf.php
 
 You will almost certainly have to modify all URLs and paths in myconf.php in 
 order for your application to work properly. You must change all file paths in 
@@ -270,7 +275,7 @@ and upload the changes to the github repository.
 - Apache HTTP Server (version 1 or 2)
   You should follow the instructions for installing PHP and Apache side-by-side 
   according to the PHP installation guide provided below. The official Apache 
-  website is here: http://httpd.apache.org
+  website is here: http://httpd.apache.org/
 
 - PHP (>= version 5.3)
   Mac OS X installation guide for PHP/Apache: 
@@ -283,7 +288,7 @@ and upload the changes to the github repository.
   for Windows here: http://dev.mysql.com/downloads/mysql#downloads
 
 - Kohana PHP Framework v3 (included in this package)
-  Official website: http://kohanaframework.org
+  Official website: http://kohanaframework.org/
 
 - Lemur Toolkit
   The Lemur Toolkit is available for Windows here:
@@ -315,12 +320,12 @@ repository.
 - Apache HTTP Server (version 1 or 2)
   You should follow the instructions for installing PHP and Apache side-by-side 
   according to the PHP installation guide provided below. The official Apache 
-  website is here: http://httpd.apache.org
+  website is here: http://httpd.apache.org/
 
 - PHP (>= version 5.3)
   Windows installation guide for PHP/Apache: 
   http://www.php.net/manual/en/install.windows.php
-  Windows downloads: http://windows.php.net/download
+  Windows downloads: http://windows.php.net/download/
 
 - MySQL Community Server
   You should install each of the following MySQL Community Server packages:
@@ -328,7 +333,7 @@ repository.
   for Windows here: http://dev.mysql.com/downloads/mysql#downloads
 
 - Kohana PHP Framework v3 (included in this package)
-  Official website: http://kohanaframework.org
+  Official website: http://kohanaframework.org/
 
 - Lemur Toolkit
   The Lemur Toolkit is available for Windows here:
@@ -337,7 +342,7 @@ repository.
 
 - CRONw: 
   CRONw is the Windows version of cron which you can obtain from: 
-  http://cronw.sourceforge.net
+  http://cronw.sourceforge.net/
 
 
 ================================================================================
@@ -356,16 +361,16 @@ to learn. Be sure to learn Kohana version 3 (KO3) and not version 2, the older
 version.
 
 Primary Kohana resources:
-- User Guide: http://kohanaframework.org/guide/about.kohana
-- API User Guide: http://kohanaframework.org/guide/api
+- User Guide: http://kohanaframework.org/guide/about.kohana/
+- API User Guide: http://kohanaframework.org/guide/api/
 - Unofficial wiki: http://kerkness.ca/wiki/doku.php
-- Community forum: http://forum.kohanaframework.org
+- Community forum: http://forum.kohanaframework.org/
 
 Other useful Kohana resources:
-- Very basic Tutorial: http://kohanaframework.org/guide/tutorials.helloworld
+- Very basic Tutorial: http://kohanaframework.org/guide/tutorials.helloworld/
 - Thorough & comprehensive tutorial: 
-  http://www.dealtaker.com/blog/2009/11/20/kohana-php-3-0-ko3-tutorial-part-1
-- Conventions/Style: http://kohanaframework.org/guide/about.conventions
+  http://www.dealtaker.com/blog/2009/11/20/kohana-php-3-0-ko3-tutorial-part-1/
+- Conventions/Style: http://kohanaframework.org/guide/about.conventions/
 - Resources for learning Kohana: 
   http://forum.kohanaframework.org/comments.php?DiscussionID=4691
 
@@ -379,17 +384,22 @@ existing guides are for Kohana version 2.
 --------------------------------------------------------------------------------
 
 Important files & directories (~/ is the root directory of the application):
-~/application/classes/controller - Main code for application
-~/application/classes/model - Generally used to communicate with database
-~/application/config - URL/path and database configuration settings
-~/application/messages - Error messages
-~/application/views/template.php - Page header & footer
-~/application/views/pages - Page content
-~/modules - Potentially useful Kohana modules (enable these by modifying
-            ~/application/bootstrap.php)
-~/data - Lemur Toolkit and Google Chart data is stored here (subfolders named as 
-         the project_id contain data for each Monitoring Project) 
-~/system - Kohana system files; in general these should not be modified 
+~/kohana/application/classes/controller - Main code for application
+~/kohana/application/classes/model - Generally used to communicate with database
+~/kohana/application/config - URL/path and database configuration settings
+~/kohana/application/messages - Error messages
+~/kohana/application/views/template.php - Page header & footer
+~/kohana/application/views/pages - Page content
+~/kohana/modules - 
+    Potentially useful Kohana modules (enable these by modifying
+    ~/kohana/application/bootstrap.php)
+~/kohana/system - Kohana system files; in general these should not be modified 
+~/data - 
+    Lemur Toolkit and Google Chart data is stored here (subfolders named as 
+    the project_id contain data for that project) 
+~/data/lemur/stopwords.list - 
+    A list of stopwords (one per line) that will be omitted when clustering is 
+    performed
 ~/js - Javascript files (this application uses the JQuery framework)
 ~/css - Cascading Style Sheet files
 ~/images 
@@ -412,9 +422,9 @@ Currently methods have been implemented (in
 ~/application/classes/controller/gather.php) to collect data from the following 
 sources:
 - Twitter Search API
-  Documentation: http://dev.twitter.com/doc/get/search
+  Documentation: http://dev.twitter.com/doc/get/search/
 - RSS Feeds
-  More information: http://www.rssboard.org
+  More information: http://www.rssboard.org/
 
 
 2.3.2 Adding additional data source APIs
@@ -439,8 +449,8 @@ list with a checkbox next to it.
 
 Suggested additional data source APIs to implement:
 - Facebook Open Stream API:
-  http://wiki.developers.facebook.com/index.php/Using_the_Open_Stream_API
-- Blogger API: http://code.google.com/apis/blogger
+  http://wiki.developers.facebook.com/index.php/Using_the_Open_Stream_API/
+- Blogger API: http://code.google.com/apis/blogger/
 
 
 --------------------------------------------------------------------------------
@@ -448,7 +458,7 @@ Suggested additional data source APIs to implement:
 --------------------------------------------------------------------------------
 
 The github repository for this application is located here:
-http://github.com/peetucket/ImpactProbe
+http://github.com/peetucket/ImpactProbe/
 
 Unlike SVN, git does not used a central repository. This is why git is 
 "distributed" and SVN is "centralized". Although this makes git an extremely 
@@ -456,11 +466,11 @@ powerful system for collaborators, tracking changes between various
 collaborators can quickly become difficult as multiple forks are created.
 
 Please read the following before working with this code:
-- Dealing with newlines: http://github.com/guides/dealing-with-newlines-in-git
+- Dealing with newlines: http://github.com/guides/dealing-with-newlines-in-git/
 - Submitting changes from your fork: 
-  http://github.com/guides/fork-a-project-and-submit-your-modifications
+  http://github.com/guides/fork-a-project-and-submit-your-modifications/
 - Using SSH keys with github: 
-  http://github.com/guides/how-to-not-have-to-type-your-password-for-every-push
+  http://github.com/guides/how-to-not-have-to-type-your-password-for-every-push/
 
 
 2.4.1 Managing remote repositories

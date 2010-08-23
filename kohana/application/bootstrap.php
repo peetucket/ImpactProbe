@@ -50,7 +50,7 @@ ini_set('unserialize_callback_func', 'spl_autoload_call');
  * - boolean  caching     enable or disable internal caching                 FALSE
  */
 Kohana::init(array(
-	'base_url'   => '~/ImpactProbe',
+	'base_url'   => 'http://localhost/ImpactProbe/kohana',
 	'index_file' => 'index.php'
 ));
 
