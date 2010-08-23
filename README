@@ -250,8 +250,8 @@ myconf.php to point to the root application path on your computer. Replace '~/'
 with the full path to the root directory of your application. To find the full 
 path open the terminal and go to the root directory of your application and 
 enter the 'pwd' command. All URLs should begin with the HTTP path to the 
-application (for example http://localhost/ if your application  is in the root 
-directory of your web server). All HTTP paths to include a trailing slash ('/') 
+application (for example http://localhost/ if your application is in the root 
+directory of your web server). All URLs must include a trailing slash ('/') 
 at the end of each URL but all file paths should NOT include a trailing slash.
 
 NOTE: It is strongly recommended that you do not change your directory stucture
