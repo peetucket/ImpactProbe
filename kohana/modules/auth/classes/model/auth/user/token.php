@@ -48,10 +48,20 @@ class Model_Auth_User_Token extends ORM {
 			$this->user_agent = sha1(Request::$user_agent);
 		}
 
-		// Create a new token each time the token is saved
-		$this->token = $this->create_token();
+		while (TRUE)
+		{
+			// Generate a new token
+			$this->token = $this->create_token();
 
-		return parent::save();
+			try
+			{
+				return parent::save();
+			}
+			catch (Kohana_Database_Exception $e)
+			{
+				// Collision occurred, token is not unique
+			}
+		}
 	}
 
 	/**
@@ -70,32 +80,15 @@ class Model_Auth_User_Token extends ORM {
 	}
 
 	/**
-	 * Finds a new unique token, using a loop to make sure that the token does
-	 * not already exist in the database. This could potentially become an
-	 * infinite loop, but the chances of that happening are very unlikely.
+	 * Generate a new unique token.
 	 *
 	 * @return  string
+	 * @uses    Text::random
 	 */
 	protected function create_token()
 	{
-		while (TRUE)
-		{
-			// Create a random token
-			$token = Text::random('alnum', 32);
-
-			// Make sure the token does not already exist
-			$count = DB::select('id')
-				->where('token', '=', $token)
-				->from($this->_table_name)
-				->execute($this->_db)
-				->count();
-
-			if ($count === 0)
-			{
-				// A unique token has been found
-				return $token;
-			}
-		}
+		// Create a random token
+		return Text::random('alnum', 32);
 	}
 
 } // End Auth User Token Model
