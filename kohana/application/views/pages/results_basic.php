@@ -90,7 +90,7 @@ along with ImpactProbe. If not, see <http://www.gnu.org/licenses/>.
     </tr>
     <tr>
         <td colspan="3" align="left">
-            Showing <b><?= $field_data['num_results'] ?></b> of <b><?= $total_results ?></b> results<br>
+            Showing <b><?= ($field_data['num_results'] > $total_results) ? $total_results : $field_data['num_results'] ?></b> of <b><?= $total_results ?></b> results<br>
             <b>Published between:</b> <?= $date_published_range ?>
         </td>
         <td colspan="2" align="left">
