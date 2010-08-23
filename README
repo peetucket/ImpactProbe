@@ -66,7 +66,7 @@ easiest to install them in the following order: MySQL -> Apache -> PHP.
   UNIX installation guide for PHP/Apache: 
   http://www.php.net/manual/en/install.unix.php
   Downloads: http://www.php.net/downloads.php
-  NOTE: Be sure to install the cURL extension with PHP.
+  ***IMPORTANT NOTE: Be sure to install the cURL extension with PHP***
 
 - MySQL Community Server
   You should install each of the following MySQL Community Server packages:
