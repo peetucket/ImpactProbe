@@ -474,7 +474,7 @@ class Controller_Gather extends Controller {
         if($this->model_gather->url_exists($this->project_id, $url)) {
             print "exists: $url\n";
         } else {
-            $keyword_metadata_entries = $this->generate_keyword_metadata($cache_text);
+            $keyword_metadata_entries = $this->generate_keyword_metadata($cache_text, $require_keywords);
             
             if($require_keywords AND count($keyword_metadata_entries) == 0) {
                 // No keywords/phrases found & $require_keywords set to 1
@@ -514,7 +514,7 @@ class Controller_Gather extends Controller {
     }
     
     // Counts total number of occurances of each [active] keyword in given $text and adds an keyword entry to array for each where count > 0
-    private function generate_keyword_metadata($text) 
+    private function generate_keyword_metadata($text, $require_keywords) 
     {
         $keyword_metadata = array();
         foreach($this->keywords_phrases as $keyword_phrase) {
@@ -535,7 +535,7 @@ class Controller_Gather extends Controller {
                 }
             }
             
-            if($num_occurances > 0) {
+            if(!$require_keywords OR $num_occurances > 0) {
                 array_push($keyword_metadata, array(
                     'keyword_id' => $keyword_phrase['keyword_id'],
                     'num_occurrences' => $num_occurances
