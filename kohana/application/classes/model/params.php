@@ -36,14 +36,46 @@ class Model_Params extends Model {
     
     public function delete_project($project_id)
     {
-        DB::delete('projects')->where('project_id','=',$project_id)->limit(1)->execute();
-        DB::delete('metadata')->where('project_id','=',$project_id)->execute();
-        DB::delete('metadata_urls')->where('project_id','=',$project_id)->execute();
+        // Delete all database entries related to project
         DB::delete('doc_clusters')->where('project_id','=',$project_id)->execute();
         DB::delete('active_api_sources')->where('project_id','=',$project_id)->execute();
+        DB::delete('rss_feeds')->where('project_id','=',$project_id)->execute();
+        DB::delete('gather_log')->where('project_id','=',$project_id)->execute();
+        DB::delete('cluster_log')->where('project_id','=',$project_id)->execute();
+        DB::delete('keywords_phrases')->where('project_id','=',$project_id)->execute();
+        DB::delete('metadata_urls')->where('project_id','=',$project_id)->execute();
+        DB::Query(Database::DELETE, "DELETE FROM keyword_metadata USING metadata INNER JOIN keyword_metadata WHERE (metadata.project_id = $project_id AND metadata.meta_id = keyword_metadata.meta_id)")->execute();
+        DB::Query(Database::DELETE, "DELETE FROM cached_text USING metadata INNER JOIN cached_text WHERE (metadata.project_id = $project_id AND metadata.meta_id = cached_text.meta_id)")->execute();
+        DB::delete('metadata')->where('project_id','=',$project_id)->execute();
+        DB::delete('projects')->where('project_id','=',$project_id)->limit(1)->execute();
         
-        // DELETE FROM t1, t2 USING t1 INNER JOIN t2 INNER JOIN t3 WHERE t1.id=t2.id AND t2.id=t3.id;
-        // Delete data files: lemur files + charts
+        // Delete all data files: lemur files + charts
+        $this->remove_dir(Kohana::config('myconf.lemur.indexes')."/$project_id");
+        $this->remove_dir(Kohana::config('myconf.lemur.docs')."/$project_id");
+        $this->remove_dir(Kohana::config('myconf.lemur.params')."/$project_id");
+        $this->remove_file(Kohana::config('myconf.path.charts')."/cluster_$project_id.gch");
+    }
+    private function remove_dir($dir) 
+    {
+        if(is_dir($dir)) {
+            $system_cmd = "rm -r $dir";
+            system($system_cmd, $return_code);
+            if($return_code != 0) {
+                echo 'Error when running command &lt;'.$system_cmd.'&gt;: '.$return_code.'<br><a href="'.Url::base().'">&laquo; Back</a>'; 
+                exit;
+            }
+        }
+    }
+    private function remove_file($file) 
+    {
+        if(file_exists($file)) {
+            $system_cmd = "rm $file";
+            system($system_cmd, $return_code);
+            if($return_code != 0) {
+                echo 'Error when running command &lt;'.$system_cmd.'&gt;: '.$return_code.'<br><a href="'.Url::base().'">&laquo; Back</a>'; 
+                exit;
+            }
+        }
     }
     
     public function get_project_data($project_id)
