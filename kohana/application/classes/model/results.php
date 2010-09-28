@@ -99,7 +99,8 @@ class Model_Results extends Model {
         $query = DB::select(DB::expr('COUNT(metadata.meta_id) AS total'))->from('metadata')
                ->join('keyword_metadata')->on('keyword_metadata.meta_id','=','metadata.meta_id')
                ->where('metadata.project_id','=',$project_id)
-               ->where('keyword_metadata.keyword_id','=',$keyword_id);
+               ->where('keyword_metadata.keyword_id','=',$keyword_id)
+               ->where('keyword_metadata.num_occurrences','>',0);
         
         if($date_from > 0) 
             $query->where('metadata.date_published','>=',$date_from);

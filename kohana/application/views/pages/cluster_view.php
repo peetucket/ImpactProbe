@@ -43,8 +43,7 @@ along with ImpactProbe. If not, see <http://www.gnu.org/licenses/>.
         anchor.setAttribute('title', title); 
         anchor.setAttribute('href', url); 
         anchor.setAttribute('rel', 'lyteframe');
-        myLytebox.start(anchor, false, true); 
-        return false; 
+        myLytebox.start(anchor, false, true);
     }
 </script>
 

@@ -385,11 +385,12 @@ class Controller_Results extends Controller {
                 $trendline_data .= date($this->date_format, $cur_date).",$num_metadata_entries\n";
             } else {
                 // Date format (year, month (0-11), day)
-                $trendline_data .= "\t[new Date(".date("Y", $cur_date).",".(date("m", $cur_date)-1).",".date("d", $cur_date)."), $num_metadata_entries],\n";
+                $trendline_data .= "[new Date(".date("Y", $cur_date).",".(date("m", $cur_date)-1).",".date("d", $cur_date)."), $num_metadata_entries],";
             }
             $cur_date += $secs_in_day;
         }
-        $trendline_data .= ($output_mode == 'csv') ? "" : "]);\n";
+        if($output_mode == 'chart_js')
+            $trendline_data = substr($trendline_data, 0, -1)."]);\n";
         return $trendline_data;
     }
     
@@ -420,17 +421,18 @@ class Controller_Results extends Controller {
                 $trendline_data .= date($this->date_format, $cur_date).",";
             } else {
                 // Date format (year, month (0-11), day)
-                $trendline_data .= "\t[new Date(".date("Y", $cur_date).",".(date("m", $cur_date)-1).",".date("d", $cur_date)."),";
+                $trendline_data .= "[new Date(".date("Y", $cur_date).",".(date("m", $cur_date)-1).",".date("d", $cur_date)."),";
             }
             foreach(array_keys($keywords_phrases) as $keyword_id) {
                 $num_metadata_entries = $this->model_results->num_metadata_entries_by_keyword($project_id, $keyword_id, $cur_date, ($cur_date+$secs_in_day));
                 $trendline_data .= "$num_metadata_entries,";
             }
             $trendline_data = substr($trendline_data, 0, -1); // Remove trailing comma
-            $trendline_data .= ($output_mode == 'csv') ? "\n" : "],\n";
+            $trendline_data .= ($output_mode == 'csv') ? "\n" : "],";
             $cur_date += $secs_in_day; 
         }
-        $trendline_data .= ($output_mode == 'csv') ? "" : "]);\n";
+        if($output_mode == 'chart_js')
+            $trendline_data = substr($trendline_data, 0, -1)."]);\n";
         return $trendline_data;
     }
     

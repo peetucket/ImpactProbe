@@ -39,12 +39,23 @@ along with ImpactProbe. If not, see <http://www.gnu.org/licenses/>.
 #lbLoading {
     position: absolute; top: 45%; left: 0%; height: 32px; width: 100%; text-align: center; line-height: 0; background: url(<?= Kohana::config('myconf.url.images'); ?>loading.gif) center no-repeat;
 }
+#header {
+    background:url(<?= Kohana::config('myconf.url.images'); ?>header_bg.jpg);
+    height:124px;
+    width:100%;
+}
 </style>
 </head>
 
-<body>
+<div>
 
+<div id="header">
+<img src="<?= Kohana::config('myconf.url.images'); ?>impact_probe_logo.jpg" width="322" height="124" alt="Impact Probe">
+</div>
+
+<div id="container">
 <?= $page_content ?>
+</div>
 
 </body>
 </html>
